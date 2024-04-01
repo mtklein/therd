@@ -45,40 +45,6 @@ static void push(struct Builder *b, struct Inst head, struct Inst body) {
 }
 
 #define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
-
-static void head(struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n % K) {
-        struct Inst const *top = ip + ip->ix;
-        top->fn(top,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-        return;
-    }
-    if (n) {
-        next;
-    }
-}
-static void body(struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n > K) {
-        struct Inst const *top = ip + ip->ix;
-        top->fn(top,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    }
-}
-struct Program* compile(struct Builder *b) {
-    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * ((size_t)b->insts * 2 + 2));
-
-    struct Inst *inst = p->inst;
-    for (int i = 0; i < b->insts; i++) { *inst++ = b->head[i]; }
-    *inst++ = (struct Inst){.fn=head, .ix=-b->insts};
-    for (int i = 0; i < b->insts; i++) { *inst++ = b->body[i]; }
-    *inst++ = (struct Inst){.fn=body, .ix=-b->insts};
-
-    free(b->head);
-    free(b->body);
-    free(b);
-    return p;
-}
-
 #define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(mul_2) { v0 *= v1; next; }
@@ -196,4 +162,37 @@ void execute(struct Program const *p, int const n, void* ptr[]) {
         F z = {0};
         p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
     }
+}
+
+static void head(struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    if (n % K) {
+        struct Inst const *top = ip + ip->ix;
+        top->fn(top,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        return;
+    }
+    if (n) {
+        next;
+    }
+}
+static void body(struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    if (n > K) {
+        struct Inst const *top = ip + ip->ix;
+        top->fn(top,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
+}
+struct Program* compile(struct Builder *b) {
+    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * ((size_t)b->insts * 2 + 2));
+
+    struct Inst *inst = p->inst;
+    for (int i = 0; i < b->insts; i++) { *inst++ = b->head[i]; }
+    *inst++ = (struct Inst){.fn=head, .ix=-b->insts};
+    for (int i = 0; i < b->insts; i++) { *inst++ = b->body[i]; }
+    *inst++ = (struct Inst){.fn=body, .ix=-b->insts};
+
+    free(b->head);
+    free(b->body);
+    free(b);
+    return p;
 }
