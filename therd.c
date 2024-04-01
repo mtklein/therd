@@ -62,19 +62,6 @@ struct Program* compile(struct Builder *b) {
 #define next s[1].fn(s+1,end,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
 #define defn(name) static void name(struct Slot const *s, int end, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
-defn(add2) { v0 += v1; next; }
-defn(add3) { v1 += v2; next; }
-defn(add4) { v2 += v3; next; }
-defn(add5) { v3 += v4; next; }
-defn(add6) { v4 += v5; next; }
-defn(add7) { v5 += v6; next; }
-defn(add8) { v6 += v7; next; }
-void add(struct Builder *b) {
-    assert(b->depth >= 2);
-    static Fn *fn[9] = {0,0,add2,add3,add4,add5,add6,add7,add8};
-    push(b, .fn=fn[b->depth--]);
-}
-
 defn(mul2) { v0 *= v1; next; }
 defn(mul3) { v1 *= v2; next; }
 defn(mul4) { v2 *= v3; next; }
@@ -85,6 +72,27 @@ defn(mul8) { v6 *= v7; next; }
 void mul(struct Builder *b) {
     assert(b->depth >= 2);
     static Fn *fn[9] = {0,0,mul2,mul3,mul4,mul5,mul6,mul7,mul8};
+    push(b, .fn=fn[b->depth--]);
+}
+
+defn(add2) { v0 += v1; next; }
+defn(add3) { v1 += v2; next; }
+defn(add4) { v2 += v3; next; }
+defn(add5) { v3 += v4; next; }
+defn(add6) { v4 += v5; next; }
+defn(add7) { v5 += v6; next; }
+defn(add8) { v6 += v7; next; }
+
+defn(mad3) { v0 += v1*v2; next; }
+
+void add(struct Builder *b) {
+    assert(b->depth >= 2);
+    if (b->slot[b->slots-1].fn == mul3) {
+        b->slot[b->slots-1].fn =  mad3;
+        b->depth -= 1;
+        return;
+    }
+    static Fn *fn[9] = {0,0,add2,add3,add4,add5,add6,add7,add8};
     push(b, .fn=fn[b->depth--]);
 }
 
