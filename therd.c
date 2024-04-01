@@ -17,7 +17,7 @@ struct Inst {
 
 struct Builder {
     int          insts,depth;
-    struct Inst *inst;
+    struct Inst *body,*tail;
 };
 
 struct Builder* builder(void) {
@@ -26,7 +26,7 @@ struct Builder* builder(void) {
 }
 
 struct Program {
-    int         unused[2];
+    int         insts,unused;
     struct Inst inst[];
 };
 
@@ -34,35 +34,53 @@ static _Bool is_pow2_or_zero(int x) {
     return (x & (x-1)) == 0;
 }
 
-static void push_(struct Builder *b, struct Inst s) {
+static void push(struct Builder *b, struct Inst body, struct Inst tail) {
     if (is_pow2_or_zero(b->insts)) {
-        b->inst = realloc(b->inst, sizeof *b->inst * (size_t)(b->insts ? 2*b->insts : 1));
+        b->body = realloc(b->body, sizeof *b->body * (size_t)(b->insts ? 2*b->insts : 1));
+        b->tail = realloc(b->tail, sizeof *b->tail * (size_t)(b->insts ? 2*b->insts : 1));
     }
-    b->inst[b->insts++] = s;
+    b->body[b->insts] = body;
+    b->tail[b->insts] = tail;
+    b->insts++;
 }
-#define push(b, ...) push_(b, (struct Inst){__VA_ARGS__})
 
-static void loop(struct Inst const *ip, int i, int const n, void* ptr[],
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+
+static void body(struct Inst const *ip, int i, int const n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    i += (i+K <= n) ? K : 1;
-    if (i < n) {
-        struct Inst const *top = ip - ip->ix;
+    i += K;
+    if (i+K <= n) {
+        struct Inst const *top = ip + ip->ix;
         top->fn(top,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        return;
+    }
+    if (i < n) {
+        next;
     }
 }
-
+static void tail(struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    i += 1;
+    if (i < n) {
+        struct Inst const *top = ip + ip->ix;
+        top->fn(top,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        return;
+    }
+}
 struct Program* compile(struct Builder *b) {
-    push(b, .fn=loop, .ix=b->insts);
+    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * ((size_t)b->insts * 2 + 2));
 
-    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * (size_t)b->insts);
-    memcpy(p->inst, b->inst, sizeof *p->inst * (size_t)b->insts);
+    for (int i = 0; i < b->insts; i++) { p->inst[p->insts++] = b->body[i]; }
+    p->inst[p->insts++] = (struct Inst){.fn=body, .ix=-b->insts};
+    for (int i = 0; i < b->insts; i++) { p->inst[p->insts++] = b->tail[i]; }
+    p->inst[p->insts++] = (struct Inst){.fn=tail, .ix=-b->insts};
 
-    free(b->inst);
+    free(b->body);
+    free(b->tail);
     free(b);
     return p;
 }
 
-#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
 #define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(mul2) { v0 *= v1; next; }
@@ -75,7 +93,9 @@ defn(mul8) { v6 *= v7; next; }
 void mul(struct Builder *b) {
     assert(b->depth >= 2);
     static Fn *fn[9] = {0,0,mul2,mul3,mul4,mul5,mul6,mul7,mul8};
-    push(b, .fn=fn[b->depth--]);
+    struct Inst inst = { .fn=fn[b->depth] };
+    push(b,inst,inst);
+    b->depth -= 1;
 }
 
 defn(add2) { v0 += v1; next; }
@@ -90,51 +110,69 @@ defn(mad3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->inst[b->insts-1].fn == mul3) {
-        b->inst[b->insts-1].fn =  mad3;
+    if (b->body[b->insts-1].fn == mul3) {
+        b->body[b->insts-1].fn =  mad3;
+        b->tail[b->insts-1].fn =  mad3;
         b->depth -= 1;
         return;
     }
     static Fn *fn[9] = {0,0,add2,add3,add4,add5,add6,add7,add8};
-    push(b, .fn=fn[b->depth--]);
+    struct Inst inst = { .fn=fn[b->depth] };
+    push(b,inst,inst);
+    b->depth -= 1;
 }
 
-static void store_(float *dst, F src, int i, int n) {
-    (i+K <= n) ? memcpy(dst+i, &src, sizeof src   )
-               : memcpy(dst+i, &src, sizeof src[0]);
-}
-defn(store1) { store_(ptr[ip->ix], v0, i,n); next; }
-defn(store2) { store_(ptr[ip->ix], v1, i,n); next; }
-defn(store3) { store_(ptr[ip->ix], v2, i,n); next; }
-defn(store4) { store_(ptr[ip->ix], v3, i,n); next; }
-defn(store5) { store_(ptr[ip->ix], v4, i,n); next; }
-defn(store6) { store_(ptr[ip->ix], v5, i,n); next; }
-defn(store7) { store_(ptr[ip->ix], v6, i,n); next; }
-defn(store8) { store_(ptr[ip->ix], v7, i,n); next; }
+defn(bstore1) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v0, sizeof v0   ); next; }
+defn(bstore2) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v1, sizeof v1   ); next; }
+defn(bstore3) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v2, sizeof v2   ); next; }
+defn(bstore4) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v3, sizeof v3   ); next; }
+defn(bstore5) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v4, sizeof v4   ); next; }
+defn(bstore6) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v5, sizeof v5   ); next; }
+defn(bstore7) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v6, sizeof v6   ); next; }
+defn(bstore8) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v7, sizeof v7   ); next; }
+
+defn(tstore1) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v0, sizeof v0[0]); next; }
+defn(tstore2) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v1, sizeof v1[0]); next; }
+defn(tstore3) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v2, sizeof v2[0]); next; }
+defn(tstore4) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v3, sizeof v3[0]); next; }
+defn(tstore5) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v4, sizeof v4[0]); next; }
+defn(tstore6) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v5, sizeof v5[0]); next; }
+defn(tstore7) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v6, sizeof v6[0]); next; }
+defn(tstore8) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v7, sizeof v7[0]); next; }
+
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
-    static Fn *fn[9] = {0,store1,store2,store3,store4,store5,store6,store7,store8};
-    push(b, .fn=fn[b->depth], .ix=ix);
+    static Fn *body[9] = {0,bstore1,bstore2,bstore3,bstore4,bstore5,bstore6,bstore7,bstore8},
+              *tail[9] = {0,tstore1,tstore2,tstore3,tstore4,tstore5,tstore6,tstore7,tstore8};
+    push(b, (struct Inst){.fn=body[b->depth], .ix=ix}
+          , (struct Inst){.fn=tail[b->depth], .ix=ix});
 }
 
-static F load_(float const *src, int i, int n) {
-    F dst;
-    (i+K <= n) ? memcpy(&dst, src+i, sizeof dst   )
-               : memcpy(&dst, src+i, sizeof dst[0]);
-    return dst;
-}
-defn(load0) { v0 = load_(ptr[ip->ix], i,n); next; }
-defn(load1) { v1 = load_(ptr[ip->ix], i,n); next; }
-defn(load2) { v2 = load_(ptr[ip->ix], i,n); next; }
-defn(load3) { v3 = load_(ptr[ip->ix], i,n); next; }
-defn(load4) { v4 = load_(ptr[ip->ix], i,n); next; }
-defn(load5) { v5 = load_(ptr[ip->ix], i,n); next; }
-defn(load6) { v6 = load_(ptr[ip->ix], i,n); next; }
-defn(load7) { v7 = load_(ptr[ip->ix], i,n); next; }
+defn(bload0) { float const *src = ptr[ip->ix]; memcpy(&v0, src+i, sizeof v0   ); next; }
+defn(bload1) { float const *src = ptr[ip->ix]; memcpy(&v1, src+i, sizeof v1   ); next; }
+defn(bload2) { float const *src = ptr[ip->ix]; memcpy(&v2, src+i, sizeof v2   ); next; }
+defn(bload3) { float const *src = ptr[ip->ix]; memcpy(&v3, src+i, sizeof v3   ); next; }
+defn(bload4) { float const *src = ptr[ip->ix]; memcpy(&v4, src+i, sizeof v4   ); next; }
+defn(bload5) { float const *src = ptr[ip->ix]; memcpy(&v5, src+i, sizeof v5   ); next; }
+defn(bload6) { float const *src = ptr[ip->ix]; memcpy(&v6, src+i, sizeof v6   ); next; }
+defn(bload7) { float const *src = ptr[ip->ix]; memcpy(&v7, src+i, sizeof v7   ); next; }
+
+defn(tload0) { float const *src = ptr[ip->ix]; memcpy(&v0, src+i, sizeof v0[0]); next; }
+defn(tload1) { float const *src = ptr[ip->ix]; memcpy(&v1, src+i, sizeof v1[0]); next; }
+defn(tload2) { float const *src = ptr[ip->ix]; memcpy(&v2, src+i, sizeof v2[0]); next; }
+defn(tload3) { float const *src = ptr[ip->ix]; memcpy(&v3, src+i, sizeof v3[0]); next; }
+defn(tload4) { float const *src = ptr[ip->ix]; memcpy(&v4, src+i, sizeof v4[0]); next; }
+defn(tload5) { float const *src = ptr[ip->ix]; memcpy(&v5, src+i, sizeof v5[0]); next; }
+defn(tload6) { float const *src = ptr[ip->ix]; memcpy(&v6, src+i, sizeof v6[0]); next; }
+defn(tload7) { float const *src = ptr[ip->ix]; memcpy(&v7, src+i, sizeof v7[0]); next; }
+
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
-    static Fn *fn[9] = {load0,load1,load2,load3,load4,load5,load6,load7,0};
-    push(b, .fn=fn[b->depth++], .ix=ix);
+    static Fn *body[9] = {bload0,bload1,bload2,bload3,bload4,bload5,bload6,bload7,0},
+              *tail[9] = {tload0,tload1,tload2,tload3,tload4,tload5,tload6,tload7,0};
+    push(b, (struct Inst){.fn=body[b->depth], .ix=ix}
+          , (struct Inst){.fn=tail[b->depth], .ix=ix});
+    b->depth += 1;
 }
 
 defn(splat0) { v0 = ((F){0} + 1) * ip->imm; next; }
@@ -148,12 +186,17 @@ defn(splat7) { v7 = ((F){0} + 1) * ip->imm; next; }
 void splat(struct Builder *b, float imm) {
     assert(b->depth < 8);
     static Fn *fn[9] = {splat0,splat1,splat2,splat3,splat4,splat5,splat6,splat7,0};
-    push(b, .fn=fn[b->depth++], .imm=imm);
+    struct Inst inst = {.fn=fn[b->depth], .imm=imm};
+    push(b,inst,inst);
+    b->depth += 1;
 }
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
+    int const tail = p->insts / 2;
+    struct Inst const *start = n >= K ? p->inst : p->inst + tail;
+
     if (n > 0) {
         F z = {0};
-        p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
+        start->fn(start,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
