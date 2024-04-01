@@ -16,10 +16,10 @@ int main(int argc, char* argv[]) {
     struct Program *p;
     {
         struct Builder *b = builder();
+        splat (b, 2.0f);
         load  (b,    0);
         splat (b, 3.0f);
         mul   (b      );
-        splat (b, 2.0f);
         add   (b      );
         store (b,    1);
         p = compile(b);
