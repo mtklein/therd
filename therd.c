@@ -152,7 +152,7 @@ void splat(struct Builder *b, float imm) {
 }
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
-    if (n) {
+    if (n > 0) {
         F z = {0};
         p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
     }
