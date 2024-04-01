@@ -11,19 +11,20 @@ static _Bool equiv(float x, float y) {
 }
 
 int main(void) {
-    float const src[] = {1,2,3,4,5,6,7,8,9,10,11};
-    float       dst[len(src)] = {0};
-
     struct Program *p;
     {
         struct Builder *b = builder();
-        load  (b,  src);
+        load  (b,    0);
         splat (b, 3.0f);
         mul   (b      );
-        store (b,  dst);
+        store (b,    1);
         p = compile(b);
     }
-    execute(p, len(src));
+
+    float src[] = {1,2,3,4,5,6,7,8,9,10,11},
+          dst[len(src)] = {0};
+
+    execute(p, len(src), (void*[]){src,dst});
     free(p);
 
     for (int i = 0; i < len(src); i++) {
