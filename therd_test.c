@@ -19,6 +19,8 @@ int main(int argc, char* argv[]) {
         load  (b,    0);
         splat (b, 3.0f);
         mul   (b      );
+        splat (b, 2.0f);
+        add   (b      );
         store (b,    1);
         p = compile(b);
     }
@@ -32,7 +34,7 @@ int main(int argc, char* argv[]) {
     free(p);
 
     for (int i = 0; i < len(src); i++) {
-        want(equiv(dst[i], 3 * src[i]));
+        want(equiv(dst[i], 3*src[i] + 2));
     }
     return 0;
 }
