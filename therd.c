@@ -12,7 +12,7 @@ typedef void Fn(struct Inst const*, int, int, void*[], F,F,F,F, F,F,F,F);
 
 struct Inst {
     Fn *fn;
-    union { float imm; int ix; void *ptr; };
+    union { float imm; int ix; void *unused; };
 };
 
 struct Builder {
@@ -122,23 +122,23 @@ void add(struct Builder *b) {
     b->depth -= 1;
 }
 
-defn(storeK_1) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v0, sizeof v0   ); next; }
-defn(storeK_2) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v1, sizeof v1   ); next; }
-defn(storeK_3) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v2, sizeof v2   ); next; }
-defn(storeK_4) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v3, sizeof v3   ); next; }
-defn(storeK_5) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v4, sizeof v4   ); next; }
-defn(storeK_6) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v5, sizeof v5   ); next; }
-defn(storeK_7) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v6, sizeof v6   ); next; }
-defn(storeK_8) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v7, sizeof v7   ); next; }
+defn(storeK_1) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v0, sizeof v0   ); next; }
+defn(storeK_2) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v1, sizeof v1   ); next; }
+defn(storeK_3) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v2, sizeof v2   ); next; }
+defn(storeK_4) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v3, sizeof v3   ); next; }
+defn(storeK_5) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v4, sizeof v4   ); next; }
+defn(storeK_6) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v5, sizeof v5   ); next; }
+defn(storeK_7) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v6, sizeof v6   ); next; }
+defn(storeK_8) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v7, sizeof v7   ); next; }
 
-defn(store1_1) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v0, sizeof v0[0]); next; }
-defn(store1_2) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v1, sizeof v1[0]); next; }
-defn(store1_3) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v2, sizeof v2[0]); next; }
-defn(store1_4) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v3, sizeof v3[0]); next; }
-defn(store1_5) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v4, sizeof v4[0]); next; }
-defn(store1_6) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v5, sizeof v5[0]); next; }
-defn(store1_7) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v6, sizeof v6[0]); next; }
-defn(store1_8) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v7, sizeof v7[0]); next; }
+defn(store1_1) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v0, sizeof v0[0]); next; }
+defn(store1_2) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v1, sizeof v1[0]); next; }
+defn(store1_3) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v2, sizeof v2[0]); next; }
+defn(store1_4) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v3, sizeof v3[0]); next; }
+defn(store1_5) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v4, sizeof v4[0]); next; }
+defn(store1_6) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v5, sizeof v5[0]); next; }
+defn(store1_7) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v6, sizeof v6[0]); next; }
+defn(store1_8) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v7, sizeof v7[0]); next; }
 
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
@@ -149,23 +149,23 @@ void store(struct Builder *b, int ix) {
           , (struct Inst){.fn=tail[b->depth], .ix=ix});
 }
 
-defn(loadK_0) { float const *src = ptr[ip->ix]; memcpy(&v0, src+i, sizeof v0   ); next; }
-defn(loadK_1) { float const *src = ptr[ip->ix]; memcpy(&v1, src+i, sizeof v1   ); next; }
-defn(loadK_2) { float const *src = ptr[ip->ix]; memcpy(&v2, src+i, sizeof v2   ); next; }
-defn(loadK_3) { float const *src = ptr[ip->ix]; memcpy(&v3, src+i, sizeof v3   ); next; }
-defn(loadK_4) { float const *src = ptr[ip->ix]; memcpy(&v4, src+i, sizeof v4   ); next; }
-defn(loadK_5) { float const *src = ptr[ip->ix]; memcpy(&v5, src+i, sizeof v5   ); next; }
-defn(loadK_6) { float const *src = ptr[ip->ix]; memcpy(&v6, src+i, sizeof v6   ); next; }
-defn(loadK_7) { float const *src = ptr[ip->ix]; memcpy(&v7, src+i, sizeof v7   ); next; }
+defn(loadK_0) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v0, src+i, sizeof v0   ); next; }
+defn(loadK_1) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v1, src+i, sizeof v1   ); next; }
+defn(loadK_2) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v2, src+i, sizeof v2   ); next; }
+defn(loadK_3) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v3, src+i, sizeof v3   ); next; }
+defn(loadK_4) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v4, src+i, sizeof v4   ); next; }
+defn(loadK_5) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v5, src+i, sizeof v5   ); next; }
+defn(loadK_6) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v6, src+i, sizeof v6   ); next; }
+defn(loadK_7) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v7, src+i, sizeof v7   ); next; }
 
-defn(load1_0) { float const *src = ptr[ip->ix]; memcpy(&v0, src+i, sizeof v0[0]); next; }
-defn(load1_1) { float const *src = ptr[ip->ix]; memcpy(&v1, src+i, sizeof v1[0]); next; }
-defn(load1_2) { float const *src = ptr[ip->ix]; memcpy(&v2, src+i, sizeof v2[0]); next; }
-defn(load1_3) { float const *src = ptr[ip->ix]; memcpy(&v3, src+i, sizeof v3[0]); next; }
-defn(load1_4) { float const *src = ptr[ip->ix]; memcpy(&v4, src+i, sizeof v4[0]); next; }
-defn(load1_5) { float const *src = ptr[ip->ix]; memcpy(&v5, src+i, sizeof v5[0]); next; }
-defn(load1_6) { float const *src = ptr[ip->ix]; memcpy(&v6, src+i, sizeof v6[0]); next; }
-defn(load1_7) { float const *src = ptr[ip->ix]; memcpy(&v7, src+i, sizeof v7[0]); next; }
+defn(load1_0) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v0, src+i, sizeof v0[0]); next; }
+defn(load1_1) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v1, src+i, sizeof v1[0]); next; }
+defn(load1_2) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v2, src+i, sizeof v2[0]); next; }
+defn(load1_3) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v3, src+i, sizeof v3[0]); next; }
+defn(load1_4) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v4, src+i, sizeof v4[0]); next; }
+defn(load1_5) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v5, src+i, sizeof v5[0]); next; }
+defn(load1_6) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v6, src+i, sizeof v6[0]); next; }
+defn(load1_7) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v7, src+i, sizeof v7[0]); next; }
 
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
