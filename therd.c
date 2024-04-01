@@ -6,18 +6,18 @@
 #define K 4
 #define vec(T) T __attribute__((vector_size(K * sizeof(T))))
 
-struct Slot;
+struct Inst;
 typedef vec(float) F;
-typedef void Fn(struct Slot const*, int, int, void*[], F,F,F,F, F,F,F,F);
+typedef void Fn(struct Inst const*, int, int, void*[], F,F,F,F, F,F,F,F);
 
-struct Slot {
+struct Inst {
     Fn *fn;
     union { float imm; int ix; void *ptr; };
 };
 
 struct Builder {
-    int          slots,depth;
-    struct Slot *slot;
+    int          insts,depth;
+    struct Inst *inst;
 };
 
 struct Builder* builder(void) {
@@ -26,41 +26,41 @@ struct Builder* builder(void) {
 }
 
 struct Program {
-    int         slots,unused;
-    struct Slot slot[];
+    int         insts,unused;
+    struct Inst inst[];
 };
 
 static _Bool is_pow2_or_zero(int x) {
     return (x & (x-1)) == 0;
 }
 
-static void push_(struct Builder *b, struct Slot s) {
-    if (is_pow2_or_zero(b->slots)) {
-        b->slot = realloc(b->slot, sizeof *b->slot * (size_t)(b->slots ? 2*b->slots : 1));
+static void push_(struct Builder *b, struct Inst s) {
+    if (is_pow2_or_zero(b->insts)) {
+        b->inst = realloc(b->inst, sizeof *b->inst * (size_t)(b->insts ? 2*b->insts : 1));
     }
-    b->slot[b->slots++] = s;
+    b->inst[b->insts++] = s;
 }
-#define push(b, ...) push_(b, (struct Slot){__VA_ARGS__})
+#define push(b, ...) push_(b, (struct Inst){__VA_ARGS__})
 
-static void done(struct Slot const *s, int i, int n, void* ptr[],
+static void done(struct Inst const *ip, int i, int n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    (void)s; (void)i; (void)n; (void)ptr;
+    (void)ip; (void)i; (void)n; (void)ptr;
     (void)v0; (void)v1; (void)v2; (void)v3; (void)v4; (void)v5; (void)v6; (void)v7;
 }
 
 struct Program* compile(struct Builder *b) {
     push(b, .fn=done);
 
-    struct Program *p = calloc(1, sizeof *p + sizeof *p->slot * (size_t)b->slots);
-    p->slots = b->slots;
-    memcpy(p->slot, b->slot, sizeof *p->slot * (size_t)b->slots);
+    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * (size_t)b->insts);
+    p->insts = b->insts;
+    memcpy(p->inst, b->inst, sizeof *p->inst * (size_t)b->insts);
 
     free(b);
     return p;
 }
 
-#define next s[1].fn(s+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
-#define defn(name) static void name(struct Slot const *s, int i, int n, void* ptr[], \
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+#define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(mul2) { v0 *= v1; next; }
 defn(mul3) { v1 *= v2; next; }
@@ -87,8 +87,8 @@ defn(mad3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->slot[b->slots-1].fn == mul3) {
-        b->slot[b->slots-1].fn =  mad3;
+    if (b->inst[b->insts-1].fn == mul3) {
+        b->inst[b->insts-1].fn =  mad3;
         b->depth -= 1;
         return;
     }
@@ -100,14 +100,14 @@ static void store_(float *dst, F src, int i, int n) {
     (i+K <= n) ? memcpy(dst+i, &src, sizeof src   )
                : memcpy(dst+i, &src, sizeof src[0]);
 }
-defn(store1) { store_(ptr[s->ix], v0, i,n); next; }
-defn(store2) { store_(ptr[s->ix], v1, i,n); next; }
-defn(store3) { store_(ptr[s->ix], v2, i,n); next; }
-defn(store4) { store_(ptr[s->ix], v3, i,n); next; }
-defn(store5) { store_(ptr[s->ix], v4, i,n); next; }
-defn(store6) { store_(ptr[s->ix], v5, i,n); next; }
-defn(store7) { store_(ptr[s->ix], v6, i,n); next; }
-defn(store8) { store_(ptr[s->ix], v7, i,n); next; }
+defn(store1) { store_(ptr[ip->ix], v0, i,n); next; }
+defn(store2) { store_(ptr[ip->ix], v1, i,n); next; }
+defn(store3) { store_(ptr[ip->ix], v2, i,n); next; }
+defn(store4) { store_(ptr[ip->ix], v3, i,n); next; }
+defn(store5) { store_(ptr[ip->ix], v4, i,n); next; }
+defn(store6) { store_(ptr[ip->ix], v5, i,n); next; }
+defn(store7) { store_(ptr[ip->ix], v6, i,n); next; }
+defn(store8) { store_(ptr[ip->ix], v7, i,n); next; }
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
     static Fn *fn[9] = {0,store1,store2,store3,store4,store5,store6,store7,store8};
@@ -120,28 +120,28 @@ static F load_(float const *src, int i, int n) {
                : memcpy(&dst, src+i, sizeof dst[0]);
     return dst;
 }
-defn(load0) { v0 = load_(ptr[s->ix], i,n); next; }
-defn(load1) { v1 = load_(ptr[s->ix], i,n); next; }
-defn(load2) { v2 = load_(ptr[s->ix], i,n); next; }
-defn(load3) { v3 = load_(ptr[s->ix], i,n); next; }
-defn(load4) { v4 = load_(ptr[s->ix], i,n); next; }
-defn(load5) { v5 = load_(ptr[s->ix], i,n); next; }
-defn(load6) { v6 = load_(ptr[s->ix], i,n); next; }
-defn(load7) { v7 = load_(ptr[s->ix], i,n); next; }
+defn(load0) { v0 = load_(ptr[ip->ix], i,n); next; }
+defn(load1) { v1 = load_(ptr[ip->ix], i,n); next; }
+defn(load2) { v2 = load_(ptr[ip->ix], i,n); next; }
+defn(load3) { v3 = load_(ptr[ip->ix], i,n); next; }
+defn(load4) { v4 = load_(ptr[ip->ix], i,n); next; }
+defn(load5) { v5 = load_(ptr[ip->ix], i,n); next; }
+defn(load6) { v6 = load_(ptr[ip->ix], i,n); next; }
+defn(load7) { v7 = load_(ptr[ip->ix], i,n); next; }
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
     static Fn *fn[9] = {load0,load1,load2,load3,load4,load5,load6,load7,0};
     push(b, .fn=fn[b->depth++], .ix=ix);
 }
 
-defn(splat0) { v0 = ((F){0} + 1) * s->imm; next; }
-defn(splat1) { v1 = ((F){0} + 1) * s->imm; next; }
-defn(splat2) { v2 = ((F){0} + 1) * s->imm; next; }
-defn(splat3) { v3 = ((F){0} + 1) * s->imm; next; }
-defn(splat4) { v4 = ((F){0} + 1) * s->imm; next; }
-defn(splat5) { v5 = ((F){0} + 1) * s->imm; next; }
-defn(splat6) { v6 = ((F){0} + 1) * s->imm; next; }
-defn(splat7) { v7 = ((F){0} + 1) * s->imm; next; }
+defn(splat0) { v0 = ((F){0} + 1) * ip->imm; next; }
+defn(splat1) { v1 = ((F){0} + 1) * ip->imm; next; }
+defn(splat2) { v2 = ((F){0} + 1) * ip->imm; next; }
+defn(splat3) { v3 = ((F){0} + 1) * ip->imm; next; }
+defn(splat4) { v4 = ((F){0} + 1) * ip->imm; next; }
+defn(splat5) { v5 = ((F){0} + 1) * ip->imm; next; }
+defn(splat6) { v6 = ((F){0} + 1) * ip->imm; next; }
+defn(splat7) { v7 = ((F){0} + 1) * ip->imm; next; }
 void splat(struct Builder *b, float imm) {
     assert(b->depth < 8);
     static Fn *fn[9] = {splat0,splat1,splat2,splat3,splat4,splat5,splat6,splat7,0};
@@ -150,6 +150,6 @@ void splat(struct Builder *b, float imm) {
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
     F z = {0};
-    for (int i = 0; i < n/K*K; i += K) { p->slot->fn(p->slot,i,n,ptr, z,z,z,z,z,z,z,z); }
-    for (int i = n/K*K; i < n; i += 1) { p->slot->fn(p->slot,i,n,ptr, z,z,z,z,z,z,z,z); }
+    for (int i = 0; i < n/K*K; i += K) { p->inst->fn(p->inst,i,n,ptr, z,z,z,z,z,z,z,z); }
+    for (int i = n/K*K; i < n; i += 1) { p->inst->fn(p->inst,i,n,ptr, z,z,z,z,z,z,z,z); }
 }
