@@ -26,7 +26,7 @@ struct Builder* builder(void) {
 }
 
 struct Program {
-    int         insts,unused;
+    int         unused[2];
     struct Inst inst[];
 };
 
@@ -55,7 +55,6 @@ struct Program* compile(struct Builder *b) {
     push(b, .fn=loop, .ix=b->insts);
 
     struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * (size_t)b->insts);
-    p->insts = b->insts;
     memcpy(p->inst, b->inst, sizeof *p->inst * (size_t)b->insts);
 
     free(b);
