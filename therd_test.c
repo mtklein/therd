@@ -10,7 +10,9 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
+    int const loops = argc > 1 ? atoi(argv[1]) : 1;
+
     struct Program *p;
     {
         struct Builder *b = builder();
@@ -24,7 +26,9 @@ int main(void) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           dst[len(src)] = {0};
 
-    execute(p, len(src), (void*[]){src,dst});
+    for (int i = 0; i < loops; i++) {
+        execute(p, len(src), (void*[]){src,dst});
+    }
     free(p);
 
     for (int i = 0; i < len(src); i++) {
