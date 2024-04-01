@@ -11,7 +11,7 @@ static _Bool equiv(float x, float y) {
 }
 
 int main(void) {
-    float const src[] = {1,2,3,4,5,6,7,8};  // TODO: jagged tail
+    float const src[] = {1,2,3,4,5,6,7,8,9,10,11};
     float       dst[len(src)] = {0};
 
     struct Program *p;

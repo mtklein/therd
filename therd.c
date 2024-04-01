@@ -44,9 +44,9 @@ static void push_(struct Builder *b, union Slot s) {
 }
 #define push(b, ...) push_(b, (union Slot){__VA_ARGS__})
 
-static void done(union Slot const *s, int i, F v1, F v2, F v3, F v4, F v5, F v6, F v7, F v8) {
+static void done(union Slot const *s, int end, F v1, F v2, F v3, F v4, F v5, F v6, F v7, F v8) {
     (void)s;
-    (void)i;
+    (void)end;
     (void)v1; (void)v2; (void)v3; (void)v4;
     (void)v5; (void)v6; (void)v7; (void)v8;
 }
@@ -62,9 +62,9 @@ struct Program* compile(struct Builder *b) {
     return p;
 }
 
-#define next s[1].fn(s+1,i, v1,v2,v3,v4,v5,v6,v7,v8); return
+#define next s[1].fn(s+1,end, v1,v2,v3,v4,v5,v6,v7,v8); return
 #define defn(name) \
-    static void name(union Slot const *s, int i, F v1, F v2, F v3, F v4, F v5, F v6, F v7, F v8)
+    static void name(union Slot const *s, int end, F v1, F v2, F v3, F v4, F v5, F v6, F v7, F v8)
 
 defn(mul2) { v1 *= v2; next; }
 defn(mul3) { v2 *= v3; next; }
@@ -79,14 +79,22 @@ void mul(struct Builder *b) {
     push(b, .fn=fn[b->depth--]);
 }
 
-defn(store1) { memcpy((++s)->dst + i, &v1, sizeof v1); next; }
-defn(store2) { memcpy((++s)->dst + i, &v2, sizeof v2); next; }
-defn(store3) { memcpy((++s)->dst + i, &v3, sizeof v3); next; }
-defn(store4) { memcpy((++s)->dst + i, &v4, sizeof v4); next; }
-defn(store5) { memcpy((++s)->dst + i, &v5, sizeof v5); next; }
-defn(store6) { memcpy((++s)->dst + i, &v6, sizeof v6); next; }
-defn(store7) { memcpy((++s)->dst + i, &v7, sizeof v7); next; }
-defn(store8) { memcpy((++s)->dst + i, &v8, sizeof v8); next; }
+defn(store1) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v1, sizeof v1[0])
+                           : memcpy((++s)->dst + end-K, &v1, sizeof v1   ); next; }
+defn(store2) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v2, sizeof v2[0])
+                           : memcpy((++s)->dst + end-K, &v2, sizeof v2   ); next; }
+defn(store3) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v3, sizeof v3[0])
+                           : memcpy((++s)->dst + end-K, &v3, sizeof v3   ); next; }
+defn(store4) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v4, sizeof v4[0])
+                           : memcpy((++s)->dst + end-K, &v4, sizeof v4   ); next; }
+defn(store5) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v5, sizeof v5[0])
+                           : memcpy((++s)->dst + end-K, &v5, sizeof v5   ); next; }
+defn(store6) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v6, sizeof v6[0])
+                           : memcpy((++s)->dst + end-K, &v6, sizeof v6   ); next; }
+defn(store7) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v7, sizeof v7[0])
+                           : memcpy((++s)->dst + end-K, &v7, sizeof v7   ); next; }
+defn(store8) { (end&(K-1)) ? memcpy((++s)->dst + end-1, &v8, sizeof v8[0])
+                           : memcpy((++s)->dst + end-K, &v8, sizeof v8   ); next; }
 void store(struct Builder *b, float *dst) {
     assert(b->depth >= 1);
     static Fn *fn[9] = {0,store1,store2,store3,store4,store5,store6,store7,store8};
@@ -94,14 +102,22 @@ void store(struct Builder *b, float *dst) {
     push(b, .dst=dst);
 }
 
-defn(load0) { memcpy(&v1, (++s)->src + i, sizeof v1); next; }
-defn(load1) { memcpy(&v2, (++s)->src + i, sizeof v2); next; }
-defn(load2) { memcpy(&v3, (++s)->src + i, sizeof v3); next; }
-defn(load3) { memcpy(&v4, (++s)->src + i, sizeof v4); next; }
-defn(load4) { memcpy(&v5, (++s)->src + i, sizeof v5); next; }
-defn(load5) { memcpy(&v6, (++s)->src + i, sizeof v6); next; }
-defn(load6) { memcpy(&v7, (++s)->src + i, sizeof v7); next; }
-defn(load7) { memcpy(&v8, (++s)->src + i, sizeof v8); next; }
+defn(load0) { (end&(K-1)) ? memcpy(&v1, (++s)->src + end-1, sizeof v1[0])
+                          : memcpy(&v1, (++s)->src + end-K, sizeof v1   ); next; }
+defn(load1) { (end&(K-1)) ? memcpy(&v2, (++s)->src + end-1, sizeof v2[0])
+                          : memcpy(&v2, (++s)->src + end-K, sizeof v2   ); next; }
+defn(load2) { (end&(K-1)) ? memcpy(&v3, (++s)->src + end-1, sizeof v3[0])
+                          : memcpy(&v3, (++s)->src + end-K, sizeof v3   ); next; }
+defn(load3) { (end&(K-1)) ? memcpy(&v4, (++s)->src + end-1, sizeof v4[0])
+                          : memcpy(&v4, (++s)->src + end-K, sizeof v4   ); next; }
+defn(load4) { (end&(K-1)) ? memcpy(&v5, (++s)->src + end-1, sizeof v5[0])
+                          : memcpy(&v5, (++s)->src + end-K, sizeof v5   ); next; }
+defn(load5) { (end&(K-1)) ? memcpy(&v6, (++s)->src + end-1, sizeof v6[0])
+                          : memcpy(&v6, (++s)->src + end-K, sizeof v6   ); next; }
+defn(load6) { (end&(K-1)) ? memcpy(&v7, (++s)->src + end-1, sizeof v7[0])
+                          : memcpy(&v7, (++s)->src + end-K, sizeof v7   ); next; }
+defn(load7) { (end&(K-1)) ? memcpy(&v8, (++s)->src + end-1, sizeof v8[0])
+                          : memcpy(&v8, (++s)->src + end-K, sizeof v8   ); next; }
 void load(struct Builder *b, float const *src) {
     assert(b->depth < 8);
     static Fn *fn[9] = {load0,load1,load2,load3,load4,load5,load6,load7,0};
@@ -124,7 +140,8 @@ void splat(struct Builder *b, float imm) {
     push(b, .imm=imm);
 }
 
-void execute(struct Program const *p, int n) {
+void execute(struct Program const *p, int const n) {
     F z = {0};
-    for (int i = 0; i < n/K*K; i += K) { p->slot->fn(p->slot,i, z,z,z,z,z,z,z,z); }
+    for (int i = 0; i < n/K*K; i += K) { p->slot->fn(p->slot,i+K, z,z,z,z,z,z,z,z); }
+    for (int i = n/K*K; i < n; i += 1) { p->slot->fn(p->slot,i+1, z,z,z,z,z,z,z,z); }
 }
