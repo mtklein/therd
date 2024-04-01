@@ -42,14 +42,17 @@ static void push_(struct Builder *b, struct Inst s) {
 }
 #define push(b, ...) push_(b, (struct Inst){__VA_ARGS__})
 
-static void done(struct Inst const *ip, int i, int n, void* ptr[],
+static void loop(struct Inst const *ip, int i, int const n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    (void)ip; (void)i; (void)n; (void)ptr;
-    (void)v0; (void)v1; (void)v2; (void)v3; (void)v4; (void)v5; (void)v6; (void)v7;
+    i += (i+K <= n) ? K : 1;
+    if (i < n) {
+        struct Inst const *top = ip - ip->ix;
+        top->fn(top,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
 }
 
 struct Program* compile(struct Builder *b) {
-    push(b, .fn=done);
+    push(b, .fn=loop, .ix=b->insts);
 
     struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * (size_t)b->insts);
     p->insts = b->insts;
@@ -149,7 +152,8 @@ void splat(struct Builder *b, float imm) {
 }
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
-    F z = {0};
-    for (int i = 0; i < n/K*K; i += K) { p->inst->fn(p->inst,i,n,ptr, z,z,z,z,z,z,z,z); }
-    for (int i = n/K*K; i < n; i += 1) { p->inst->fn(p->inst,i,n,ptr, z,z,z,z,z,z,z,z); }
+    if (n) {
+        F z = {0};
+        p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
+    }
 }
