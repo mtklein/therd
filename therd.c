@@ -8,7 +8,7 @@
 
 struct Slot;
 typedef vec(float) F;
-typedef void Fn(struct Slot const*, int const, void*[], F,F,F,F, F,F,F,F);
+typedef void Fn(struct Slot const*, int, int, void*[], F,F,F,F, F,F,F,F);
 
 struct Slot {
     Fn *fn;
@@ -42,9 +42,9 @@ static void push_(struct Builder *b, struct Slot s) {
 }
 #define push(b, ...) push_(b, (struct Slot){__VA_ARGS__})
 
-static void done(struct Slot const *s, int end, void* ptr[],
+static void done(struct Slot const *s, int i, int n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    (void)s; (void)end; (void)ptr;
+    (void)s; (void)i; (void)n; (void)ptr;
     (void)v0; (void)v1; (void)v2; (void)v3; (void)v4; (void)v5; (void)v6; (void)v7;
 }
 
@@ -59,8 +59,8 @@ struct Program* compile(struct Builder *b) {
     return p;
 }
 
-#define next s[1].fn(s+1,end,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
-#define defn(name) static void name(struct Slot const *s, int end, void* ptr[], \
+#define next s[1].fn(s+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+#define defn(name) static void name(struct Slot const *s, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(mul2) { v0 *= v1; next; }
 defn(mul3) { v1 *= v2; next; }
@@ -96,38 +96,38 @@ void add(struct Builder *b) {
     push(b, .fn=fn[b->depth--]);
 }
 
-static void store_(float *dst, F src, int end) {
-    (end & (K-1)) ? memcpy(dst + end-1, &src, sizeof src[0])
-                  : memcpy(dst + end-K, &src, sizeof src   );
+static void store_(float *dst, F src, int i, int n) {
+    (i+K <= n) ? memcpy(dst+i, &src, sizeof src   )
+               : memcpy(dst+i, &src, sizeof src[0]);
 }
-defn(store1) { store_(ptr[s->ix], v0, end); next; }
-defn(store2) { store_(ptr[s->ix], v1, end); next; }
-defn(store3) { store_(ptr[s->ix], v2, end); next; }
-defn(store4) { store_(ptr[s->ix], v3, end); next; }
-defn(store5) { store_(ptr[s->ix], v4, end); next; }
-defn(store6) { store_(ptr[s->ix], v5, end); next; }
-defn(store7) { store_(ptr[s->ix], v6, end); next; }
-defn(store8) { store_(ptr[s->ix], v7, end); next; }
+defn(store1) { store_(ptr[s->ix], v0, i,n); next; }
+defn(store2) { store_(ptr[s->ix], v1, i,n); next; }
+defn(store3) { store_(ptr[s->ix], v2, i,n); next; }
+defn(store4) { store_(ptr[s->ix], v3, i,n); next; }
+defn(store5) { store_(ptr[s->ix], v4, i,n); next; }
+defn(store6) { store_(ptr[s->ix], v5, i,n); next; }
+defn(store7) { store_(ptr[s->ix], v6, i,n); next; }
+defn(store8) { store_(ptr[s->ix], v7, i,n); next; }
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
     static Fn *fn[9] = {0,store1,store2,store3,store4,store5,store6,store7,store8};
     push(b, .fn=fn[b->depth], .ix=ix);
 }
 
-static F load_(float const *src, int end) {
+static F load_(float const *src, int i, int n) {
     F dst;
-    (end & (K-1)) ? memcpy(&dst, src + end-1, sizeof dst[0])
-                  : memcpy(&dst, src + end-K, sizeof dst   );
+    (i+K <= n) ? memcpy(&dst, src+i, sizeof dst   )
+               : memcpy(&dst, src+i, sizeof dst[0]);
     return dst;
 }
-defn(load0) { v0 = load_(ptr[s->ix], end); next; }
-defn(load1) { v1 = load_(ptr[s->ix], end); next; }
-defn(load2) { v2 = load_(ptr[s->ix], end); next; }
-defn(load3) { v3 = load_(ptr[s->ix], end); next; }
-defn(load4) { v4 = load_(ptr[s->ix], end); next; }
-defn(load5) { v5 = load_(ptr[s->ix], end); next; }
-defn(load6) { v6 = load_(ptr[s->ix], end); next; }
-defn(load7) { v7 = load_(ptr[s->ix], end); next; }
+defn(load0) { v0 = load_(ptr[s->ix], i,n); next; }
+defn(load1) { v1 = load_(ptr[s->ix], i,n); next; }
+defn(load2) { v2 = load_(ptr[s->ix], i,n); next; }
+defn(load3) { v3 = load_(ptr[s->ix], i,n); next; }
+defn(load4) { v4 = load_(ptr[s->ix], i,n); next; }
+defn(load5) { v5 = load_(ptr[s->ix], i,n); next; }
+defn(load6) { v6 = load_(ptr[s->ix], i,n); next; }
+defn(load7) { v7 = load_(ptr[s->ix], i,n); next; }
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
     static Fn *fn[9] = {load0,load1,load2,load3,load4,load5,load6,load7,0};
@@ -150,6 +150,6 @@ void splat(struct Builder *b, float imm) {
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
     F z = {0};
-    for (int i = 0; i < n/K*K; i += K) { p->slot->fn(p->slot,i+K,ptr, z,z,z,z,z,z,z,z); }
-    for (int i = n/K*K; i < n; i += 1) { p->slot->fn(p->slot,i+1,ptr, z,z,z,z,z,z,z,z); }
+    for (int i = 0; i < n/K*K; i += K) { p->slot->fn(p->slot,i,n,ptr, z,z,z,z,z,z,z,z); }
+    for (int i = n/K*K; i < n; i += 1) { p->slot->fn(p->slot,i,n,ptr, z,z,z,z,z,z,z,z); }
 }
