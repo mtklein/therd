@@ -6,19 +6,18 @@
 #define K 4
 #define vec(T) T __attribute__((vector_size(K * sizeof(T))))
 
-union Slot;
+struct Slot;
 typedef vec(float) F;
-typedef void Fn(union Slot const*, int const, void*[], F,F,F,F, F,F,F,F);
+typedef void Fn(struct Slot const*, int const, void*[], F,F,F,F, F,F,F,F);
 
-union Slot {
-    Fn    *fn;
-    float  imm;
-    int    ix;
+struct Slot {
+    Fn *fn;
+    union { float imm; int ix; void *ptr; };
 };
 
 struct Builder {
-    int         depth,slots;
-    union Slot *slot;
+    int          slots,depth;
+    struct Slot *slot;
 };
 
 struct Builder* builder(void) {
@@ -27,23 +26,23 @@ struct Builder* builder(void) {
 }
 
 struct Program {
-    int        slots,unused;
-    union Slot slot[];
+    int         slots,unused;
+    struct Slot slot[];
 };
 
 static _Bool is_pow2_or_zero(int x) {
     return (x & (x-1)) == 0;
 }
 
-static void push_(struct Builder *b, union Slot s) {
+static void push_(struct Builder *b, struct Slot s) {
     if (is_pow2_or_zero(b->slots)) {
         b->slot = realloc(b->slot, sizeof *b->slot * (size_t)(b->slots ? 2*b->slots : 1));
     }
     b->slot[b->slots++] = s;
 }
-#define push(b, ...) push_(b, (union Slot){__VA_ARGS__})
+#define push(b, ...) push_(b, (struct Slot){__VA_ARGS__})
 
-static void done(union Slot const *s, int end, void* ptr[],
+static void done(struct Slot const *s, int end, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     (void)s; (void)end; (void)ptr;
     (void)v0; (void)v1; (void)v2; (void)v3; (void)v4; (void)v5; (void)v6; (void)v7;
@@ -61,7 +60,7 @@ struct Program* compile(struct Builder *b) {
 }
 
 #define next s[1].fn(s+1,end,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
-#define defn(name) static void name(union Slot const *s, int end, void* ptr[], \
+#define defn(name) static void name(struct Slot const *s, int end, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(add2) { v0 += v1; next; }
 defn(add3) { v1 += v2; next; }
@@ -93,19 +92,18 @@ static void store_(float *dst, F src, int end) {
     (end & (K-1)) ? memcpy(dst + end-1, &src, sizeof src[0])
                   : memcpy(dst + end-K, &src, sizeof src   );
 }
-defn(store1) { store_(ptr[(++s)->ix], v0, end); next; }
-defn(store2) { store_(ptr[(++s)->ix], v1, end); next; }
-defn(store3) { store_(ptr[(++s)->ix], v2, end); next; }
-defn(store4) { store_(ptr[(++s)->ix], v3, end); next; }
-defn(store5) { store_(ptr[(++s)->ix], v4, end); next; }
-defn(store6) { store_(ptr[(++s)->ix], v5, end); next; }
-defn(store7) { store_(ptr[(++s)->ix], v6, end); next; }
-defn(store8) { store_(ptr[(++s)->ix], v7, end); next; }
+defn(store1) { store_(ptr[s->ix], v0, end); next; }
+defn(store2) { store_(ptr[s->ix], v1, end); next; }
+defn(store3) { store_(ptr[s->ix], v2, end); next; }
+defn(store4) { store_(ptr[s->ix], v3, end); next; }
+defn(store5) { store_(ptr[s->ix], v4, end); next; }
+defn(store6) { store_(ptr[s->ix], v5, end); next; }
+defn(store7) { store_(ptr[s->ix], v6, end); next; }
+defn(store8) { store_(ptr[s->ix], v7, end); next; }
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
     static Fn *fn[9] = {0,store1,store2,store3,store4,store5,store6,store7,store8};
-    push(b, .fn=fn[b->depth]);
-    push(b, .ix=ix);
+    push(b, .fn=fn[b->depth], .ix=ix);
 }
 
 static F load_(float const *src, int end) {
@@ -114,34 +112,32 @@ static F load_(float const *src, int end) {
                   : memcpy(&dst, src + end-K, sizeof dst   );
     return dst;
 }
-defn(load0) { v0 = load_(ptr[(++s)->ix], end); next; }
-defn(load1) { v1 = load_(ptr[(++s)->ix], end); next; }
-defn(load2) { v2 = load_(ptr[(++s)->ix], end); next; }
-defn(load3) { v3 = load_(ptr[(++s)->ix], end); next; }
-defn(load4) { v4 = load_(ptr[(++s)->ix], end); next; }
-defn(load5) { v5 = load_(ptr[(++s)->ix], end); next; }
-defn(load6) { v6 = load_(ptr[(++s)->ix], end); next; }
-defn(load7) { v7 = load_(ptr[(++s)->ix], end); next; }
+defn(load0) { v0 = load_(ptr[s->ix], end); next; }
+defn(load1) { v1 = load_(ptr[s->ix], end); next; }
+defn(load2) { v2 = load_(ptr[s->ix], end); next; }
+defn(load3) { v3 = load_(ptr[s->ix], end); next; }
+defn(load4) { v4 = load_(ptr[s->ix], end); next; }
+defn(load5) { v5 = load_(ptr[s->ix], end); next; }
+defn(load6) { v6 = load_(ptr[s->ix], end); next; }
+defn(load7) { v7 = load_(ptr[s->ix], end); next; }
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
     static Fn *fn[9] = {load0,load1,load2,load3,load4,load5,load6,load7,0};
-    push(b, .fn=fn[b->depth++]);
-    push(b, .ix=ix);
+    push(b, .fn=fn[b->depth++], .ix=ix);
 }
 
-defn(splat0) { v0 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat1) { v1 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat2) { v2 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat3) { v3 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat4) { v4 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat5) { v5 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat6) { v6 = ((F){0} + 1) * (++s)->imm; next; }
-defn(splat7) { v7 = ((F){0} + 1) * (++s)->imm; next; }
+defn(splat0) { v0 = ((F){0} + 1) * s->imm; next; }
+defn(splat1) { v1 = ((F){0} + 1) * s->imm; next; }
+defn(splat2) { v2 = ((F){0} + 1) * s->imm; next; }
+defn(splat3) { v3 = ((F){0} + 1) * s->imm; next; }
+defn(splat4) { v4 = ((F){0} + 1) * s->imm; next; }
+defn(splat5) { v5 = ((F){0} + 1) * s->imm; next; }
+defn(splat6) { v6 = ((F){0} + 1) * s->imm; next; }
+defn(splat7) { v7 = ((F){0} + 1) * s->imm; next; }
 void splat(struct Builder *b, float imm) {
     assert(b->depth < 8);
     static Fn *fn[9] = {splat0,splat1,splat2,splat3,splat4,splat5,splat6,splat7,0};
-    push(b, .fn=fn[b->depth++]);
-    push(b, .imm=imm);
+    push(b, .fn=fn[b->depth++], .imm=imm);
 }
 
 void execute(struct Program const *p, int const n, void* ptr[]) {
