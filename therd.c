@@ -57,6 +57,7 @@ struct Program* compile(struct Builder *b) {
     struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * (size_t)b->insts);
     memcpy(p->inst, b->inst, sizeof *p->inst * (size_t)b->insts);
 
+    free(b->inst);
     free(b);
     return p;
 }
