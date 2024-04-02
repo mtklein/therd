@@ -141,17 +141,17 @@ void load(struct Builder *b, int ix) {
     b->depth += 1;
 }
 
-defn(splat_0) { v0 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_1) { v1 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_2) { v2 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_3) { v3 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_4) { v4 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_5) { v5 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_6) { v6 = ((F){0} + 1) * ip->imm; next; }
-defn(splat_7) { v7 = ((F){0} + 1) * ip->imm; next; }
-void splat(struct Builder *b, float imm) {
+defn(imm_0) { v0 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_1) { v1 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_2) { v2 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_3) { v3 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_4) { v4 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_5) { v5 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_6) { v6 = ((F){0} + 1) * ip->imm; next; }
+defn(imm_7) { v7 = ((F){0} + 1) * ip->imm; next; }
+void imm(struct Builder *b, float imm) {
     assert(b->depth < 8);
-    static Fn *fn[9] = {splat_0,splat_1,splat_2,splat_3,splat_4,splat_5,splat_6,splat_7,0};
+    static Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
     struct Inst inst = {.fn=fn[b->depth], .imm=imm};
     push(b,inst,inst);
     b->depth += 1;
