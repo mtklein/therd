@@ -1,7 +1,7 @@
 #pragma once
 
 struct Program* program(void);
-void start(struct Program const*, int n, void* ptr[]);
+void run(struct Program const*, int n, void* ptr[]);
 
 struct Program* store(struct Program*, int);
 struct Program* load (struct Program*, int);

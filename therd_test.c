@@ -32,7 +32,7 @@ static void test_empty(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        start(p, len(src), (void*[]){src,dst,&uni});
+        run(p, len(src), (void*[]){src,dst,&uni});
     }
     free(p);
 
@@ -55,7 +55,7 @@ static void test_3xp2(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        start(p, len(src), (void*[]){src,dst,&uni});
+        run(p, len(src), (void*[]){src,dst,&uni});
     }
     free(p);
 

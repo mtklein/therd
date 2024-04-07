@@ -208,7 +208,7 @@ struct Program* imm(struct Program *p, float imm) {
     return push(p,inst,inst);
 }
 
-void start(struct Program const *p, int const n, void* ptr[]) {
+void run(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
         p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
