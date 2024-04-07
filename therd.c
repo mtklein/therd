@@ -18,86 +18,71 @@ struct Inst {
 };
 
 struct Program {
-    int   depth,insts;
-    struct Inst inst[];
+    int          insts,depth;
+    struct Inst *body;
+    struct Inst  head[];
 };
+
+static void head(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    (void)ip;
+    if (n % K) {
+        p->head->fn(p,p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    } else if (n) {
+        p->body->fn(p,p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
+}
+static void body(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    (void)ip;
+    if (n > K) {
+        p->body->fn(p,p->body,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
+}
+
+struct Program* program(void) {
+    struct Program *p = malloc(sizeof *p + 2 * sizeof *p->head);
+    p->depth = 0;
+    p->insts = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
+    p->body  = p->head + p->insts;
+    *p->head = (struct Inst){.fn=head};
+    *p->body = (struct Inst){.fn=body};
+    return p;
+}
 
 static _Bool is_pow2_or_zero(int x) {
     return 0 == (x & (x-1));
 }
 
-static int next_pow2(int x) {
-    x--;
-    x |= x >>  1;
-    x |= x >>  2;
-    x |= x >>  4;
-    x |= x >>  8;
-    x |= x >> 16;
-    x++;
-    return x;
-}
-
-static void head(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n % K) {
-        struct Inst const *loop = ip - (p->insts - 1);
-        loop->fn(p,loop,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    } else if (n) {
-        struct Inst const *body = p->inst + next_pow2(p->insts);
-        body->fn(p,body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    }
-}
-static void body(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n > K) {
-        struct Inst const *loop = ip - (p->insts - 1);
-        loop->fn(p,loop,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    }
-}
-
-struct Program* program(void) {
-    struct Program *p = malloc(sizeof *p + 2 * sizeof *p->inst);
-    p->depth          = 0;
-    p->insts          = 1;  // Logical, physically 2x this, one head Inst and one body Inst.
-    p->inst[0]        = (struct Inst){.fn=head};
-    p->inst[1]        = (struct Inst){.fn=body};
-    return p;
-}
-
 static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
 
-    // head <, body =, user insts (a,A) (b,B) (c,C), unused allocation .
-    // N=1: <=                   (alloc= 2)
-    // N=2: a<A=                 (alloc= 4)
-    // N=3: ab<. AB=.            (alloc= 8)
-    // N=4: abc< ABC=            (alloc= 8)
-    // N=5: abcd <... ABCD =...  (alloc=16)
-
     if (is_pow2_or_zero(N)) {
-        // For e.g. N=4 -> N=5, we'll need more space:
+        // E.g. N=4 -> 5,
         //   N=4: abc< ABC=
         //   ~~>  abc< ABC= .... ....
-        p = realloc(p, sizeof *p + sizeof *p->inst * 4 * (size_t)N);
+        p = realloc(p, sizeof *p + sizeof *p->head * 4 * (size_t)N);
+        p->body = p->head + 2*N;
 
         // Move existing body instructions to new back half:
         //   N=4: abc< ABC= .... ....
         //   ~~>  abc< .... ABC= ....
-        for (int i = N; i < 2*N; i++) {
-            p->inst[N+i] = p->inst[i];
+        struct Inst *old_body = p->head + N;
+        for (int i = 0; i < N; i++) {
+            p->body[i] = old_body[i];
+            old_body[i] = (struct Inst){0};  // Not needed, just for debugging clarity.
         }
     }
 
-    int const B = next_pow2(N+1);
-    assert(p->inst[  N-1].fn == head);
-    assert(p->inst[B+N-1].fn == body);
+    assert(p->head[N-1].fn == head);
+    assert(p->body[N-1].fn == body);
 
-    p->inst[  N-1] = a;
-    p->inst[  N  ] = (struct Inst){.fn=head};
-    p->inst[B+N-1] = A;
-    p->inst[B+N  ] = (struct Inst){.fn=body};
+    p->head[N-1] = a;
+    p->head[N  ] = (struct Inst){.fn=head};
+    p->body[N-1] = A;
+    p->body[N  ] = (struct Inst){.fn=body};
 
-    p->insts++;
+    p->insts = N+1;
     return p;
 }
 
@@ -133,11 +118,9 @@ defn(mad_3) { v0 += v1*v2; next; }
 
 struct Program* add(struct Program *p) {
     assert(p->depth >= 2);
-    int const N = p->insts,
-              B = next_pow2(N);
-    if (p->inst[  N-2].fn == mul_3) {
-        p->inst[  N-2].fn =  mad_3;
-        p->inst[B+N-2].fn =  mad_3;
+    if (p->head[p->insts - 2].fn == mul_3) {
+        p->head[p->insts - 2].fn =  mad_3;
+        p->body[p->insts - 2].fn =  mad_3;
         p->depth -= 1;
         return p;
     }
@@ -236,6 +219,6 @@ struct Program* imm(struct Program *p, float imm) {
 void run(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        p->inst->fn(p,p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
+        p->head->fn(p,p->head,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
