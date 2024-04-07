@@ -173,7 +173,7 @@ void imm(struct Builder *b, float imm) {
     b->depth += 1;
 }
 
-void execute(struct Program const *p, int const n, void* ptr[]) {
+void start(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
         p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
