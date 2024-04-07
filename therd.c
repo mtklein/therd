@@ -67,10 +67,9 @@ static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
         // Move existing body instructions to new back half:
         //   N=4: abc< ABC= .... ....
         //   ~~>  abc< .... ABC= ....
-        struct Inst *old_body = p->head + N;
+        struct Inst const *old_body = p->head + N;
         for (int i = 0; i < N; i++) {
             p->body[i] = old_body[i];
-            old_body[i] = (struct Inst){0};  // Not needed, just for debugging clarity.
         }
     }
 
