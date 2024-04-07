@@ -141,6 +141,22 @@ void load(struct Builder *b, int ix) {
     b->depth += 1;
 }
 
+defn(uni_0) { float const *uni = ptr[ip->ix]; v0 = ((F){0} + 1) * *uni; next; }
+defn(uni_1) { float const *uni = ptr[ip->ix]; v1 = ((F){0} + 1) * *uni; next; }
+defn(uni_2) { float const *uni = ptr[ip->ix]; v2 = ((F){0} + 1) * *uni; next; }
+defn(uni_3) { float const *uni = ptr[ip->ix]; v3 = ((F){0} + 1) * *uni; next; }
+defn(uni_4) { float const *uni = ptr[ip->ix]; v4 = ((F){0} + 1) * *uni; next; }
+defn(uni_5) { float const *uni = ptr[ip->ix]; v5 = ((F){0} + 1) * *uni; next; }
+defn(uni_6) { float const *uni = ptr[ip->ix]; v6 = ((F){0} + 1) * *uni; next; }
+defn(uni_7) { float const *uni = ptr[ip->ix]; v7 = ((F){0} + 1) * *uni; next; }
+void uni(struct Builder *b, int ix) {
+    assert(b->depth < 8);
+    static Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
+    struct Inst inst = {.fn=fn[b->depth], .ix=ix};
+    push(b,inst,inst);
+    b->depth += 1;
+}
+
 defn(imm_0) { v0 = ((F){0} + 1) * ip->imm; next; }
 defn(imm_1) { v1 = ((F){0} + 1) * ip->imm; next; }
 defn(imm_2) { v2 = ((F){0} + 1) * ip->imm; next; }

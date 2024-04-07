@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         struct Builder *b = builder();
         imm  (b, 2.0f);
         load (b,    0);
-        imm  (b, 3.0f);
+        uni  (b,    2);
         mul  (b      );
         add  (b      );
         store(b,    1);
@@ -26,10 +26,11 @@ int main(int argc, char* argv[]) {
     }
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
+          uni   = 3.0f,
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        execute(p, len(src), (void*[]){src,dst});
+        execute(p, len(src), (void*[]){src,dst,&uni});
     }
     free(p);
 
