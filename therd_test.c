@@ -67,7 +67,7 @@ static void test_3xp2(int const loops) {
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
 int main(int argc, char* argv[]) {
-    int const   loops = argc > 1 ? atoi(argv[1]) : 1;
+    int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "3xp2";
 
     test(build);

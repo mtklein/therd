@@ -42,11 +42,11 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
 
 struct Program* program(void) {
     struct Program *p = malloc(sizeof *p + 2 * sizeof *p->head);
-    p->depth = 0;
-    p->insts = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
-    p->body  = p->head + p->insts;
-    *p->head = (struct Inst){.fn=head};
-    *p->body = (struct Inst){.fn=body};
+    p->depth   = 0;
+    p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
+    p->body    = p->head + p->insts;
+    p->head[0] = (struct Inst){.fn=head};
+    p->body[0] = (struct Inst){.fn=body};
     return p;
 }
 
