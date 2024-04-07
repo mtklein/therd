@@ -1,8 +1,8 @@
 #pragma once
 
 struct Builder* builder(void);
-struct Program* compile(struct Builder*);
-void            start(struct Program const*, int n, void* ptr[]);
+struct Inst*    compile(struct Builder*);
+void            start(struct Inst const*, int n, void* ptr[]);
 
 void store(struct Builder*, int);
 void load (struct Builder*, int);

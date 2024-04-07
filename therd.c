@@ -25,11 +25,6 @@ struct Builder* builder(void) {
     return b;
 }
 
-struct Program {
-    int         unused[2];
-    struct Inst inst[];
-};
-
 static _Bool is_pow2_or_zero(int x) {
     return (x & (x-1)) == 0;
 }
@@ -173,10 +168,10 @@ void imm(struct Builder *b, float imm) {
     b->depth += 1;
 }
 
-void start(struct Program const *p, int const n, void* ptr[]) {
+void start(struct Inst const *inst, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        p->inst->fn(p->inst,0,n,ptr, z,z,z,z, z,z,z,z);
+        inst->fn(inst,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
 
@@ -198,9 +193,9 @@ static void body(struct Inst const *ip, int i, int const n, void* ptr[],
         top->fn(top,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
-struct Program* compile(struct Builder *b) {
-    struct Program *p = calloc(1, sizeof *p + sizeof *p->inst * ((size_t)b->insts * 2 + 2));
-    struct Inst *inst = p->inst;
+struct Inst* compile(struct Builder *b) {
+    int const    insts = 2*b->insts + 2;
+    struct Inst *inst  = calloc(1, sizeof *inst * (size_t)insts);
 
     for (int i = 0; i < b->insts; i++) {
         *inst++ = b->head[i];
@@ -215,5 +210,5 @@ struct Program* compile(struct Builder *b) {
     free(b->head);
     free(b->body);
     free(b);
-    return p;
+    return inst - insts;
 }

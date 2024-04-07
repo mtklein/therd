@@ -25,7 +25,7 @@ static void test_build(int const loops) {
 }
 
 static void test_empty(int const loops) {
-    struct Program *p = compile(builder());
+    struct Inst *p = compile(builder());
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -42,7 +42,7 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    struct Program *p;
+    struct Inst *p;
     {
         struct Builder *b = builder();
         imm  (b, 2.0f);
