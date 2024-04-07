@@ -17,29 +17,76 @@ struct Inst {
 
 struct Builder {
     int          insts,depth;
-    struct Inst *head,*body;
+    struct Inst *inst;
 };
+
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+
+static void head(struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    if (n % K) {
+        struct Inst const *top = ip + ip->ix;
+        top->fn(top,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        return;
+    }
+    if (n) {
+        next;
+    }
+}
+static void body(struct Inst const *ip, int i, int const n, void* ptr[],
+                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+    if (n > K) {
+        struct Inst const *top = ip + ip->ix;
+        top->fn(top,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
+}
 
 struct Builder* builder(void) {
     struct Builder *b = calloc(1, sizeof *b);
+    b->inst           = calloc(2, sizeof *b->inst);
+    b->insts          = 2;
+    b->inst[0]        = (struct Inst){.fn=head, .ix=0};
+    b->inst[1]        = (struct Inst){.fn=body, .ix=0};
     return b;
+}
+
+struct Inst* compile(struct Builder *b) {
+    struct Inst *inst = b->inst;
+    free(b);
+    return inst;
 }
 
 static _Bool is_pow2_or_zero(int x) {
     return (x & (x-1)) == 0;
 }
 
-static void push(struct Builder *b, struct Inst head, struct Inst body) {
+static void push(struct Builder *b, struct Inst a, struct Inst A) {
     if (is_pow2_or_zero(b->insts)) {
-        b->head = realloc(b->head, sizeof *b->head * (size_t)(b->insts ? 2*b->insts : 1));
-        b->body = realloc(b->body, sizeof *b->body * (size_t)(b->insts ? 2*b->insts : 1));
+        assert(b->insts);
+        b->inst = realloc(b->inst, sizeof *b->inst * (size_t)b->insts * 2);
     }
-    b->head[b->insts] = head;
-    b->body[b->insts] = body;
-    b->insts++;
+
+    // head <, body =, user insts (a,A), (b,B), (c,C) ..., and . unused allocation
+    // N=2:  <=                    (alloc=2)
+    // N=4:  a<A=                  (alloc=4)
+    // N=6:  ab<A B=..             (alloc=8)
+    // N=8:  abc< ABC=             (alloc=8)
+    // N=10: abcd <ABC D=.. ....   (alloc=16)
+    int const N = b->insts;
+    assert(b->inst[N  -1].fn == body);
+    assert(b->inst[N/2-1].fn == head);
+
+    b->inst[N  +1] = (struct Inst){.fn=body, .ix=b->inst[N  -1].ix-1};
+    b->inst[N    ] = A;
+    for (int i = N; i --> N/2;) {
+        b->inst[i] = b->inst[i-1];
+    }
+    b->inst[N/2  ] = (struct Inst){.fn=head, .ix=b->inst[N/2-1].ix-1};
+    b->inst[N/2-1] = a;
+
+    b->insts = N+2;
 }
 
-#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
 #define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 defn(mul_2) { v0 *= v1; next; }
@@ -70,9 +117,9 @@ defn(mad_3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->head[b->insts-1].fn == mul_3) {
-        b->head[b->insts-1].fn =  mad_3;
-        b->body[b->insts-1].fn =  mad_3;
+    if (b->inst[b->insts   - 2].fn == mul_3) {
+        b->inst[b->insts   - 2].fn =  mad_3;
+        b->inst[b->insts/2 - 2].fn =  mad_3;
         b->depth -= 1;
         return;
     }
@@ -173,42 +220,4 @@ void start(struct Inst const *inst, int const n, void* ptr[]) {
         F z = {0};
         inst->fn(inst,0,n,ptr, z,z,z,z, z,z,z,z);
     }
-}
-
-static void head(struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n % K) {
-        struct Inst const *top = ip + ip->ix;
-        top->fn(top,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-        return;
-    }
-    if (n) {
-        next;
-    }
-}
-static void body(struct Inst const *ip, int i, int const n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    if (n > K) {
-        struct Inst const *top = ip + ip->ix;
-        top->fn(top,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    }
-}
-struct Inst* compile(struct Builder *b) {
-    int const    insts = 2*b->insts + 2;
-    struct Inst *inst  = calloc(1, sizeof *inst * (size_t)insts);
-
-    for (int i = 0; i < b->insts; i++) {
-        *inst++ = b->head[i];
-    }
-    *inst++ = (struct Inst){.fn=head, .ix=-b->insts};
-
-    for (int i = 0; i < b->insts; i++) {
-        *inst++ = b->body[i];
-    }
-    *inst++ = (struct Inst){.fn=body, .ix=-b->insts};
-
-    free(b->head);
-    free(b->body);
-    free(b);
-    return inst - insts;
 }
