@@ -13,19 +13,19 @@ static _Bool equiv(float x, float y) {
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        struct Builder *b = builder();
-        imm  (b, 2.0f);
-        load (b,    0);
-        uni  (b,    2);
-        mul  (b      );
-        add  (b      );
-        store(b,    1);
-        free(compile(b));
+        struct Program *p = program();
+        p = imm  (p, 2.0f);
+        p = load (p,    0);
+        p = uni  (p,    2);
+        p = mul  (p      );
+        p = add  (p      );
+        p = store(p,    1);
+        free(p);
     }
 }
 
 static void test_empty(int const loops) {
-    struct Inst *p = compile(builder());
+    struct Program *p = program();
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -42,17 +42,13 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    struct Inst *p;
-    {
-        struct Builder *b = builder();
-        imm  (b, 2.0f);
-        load (b,    0);
-        uni  (b,    2);
-        mul  (b      );
-        add  (b      );
-        store(b,    1);
-        p = compile(b);
-    }
+    struct Program *p = program();
+    p = imm  (p, 2.0f);
+    p = load (p,    0);
+    p = uni  (p,    2);
+    p = mul  (p      );
+    p = add  (p      );
+    p = store(p,    1);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,

@@ -1,13 +1,12 @@
 #pragma once
 
-struct Builder* builder(void);
-struct Inst*    compile(struct Builder*);
-void            start(struct Inst const*, int n, void* ptr[]);
+struct Program* program(void);
+void start(struct Program const*, int n, void* ptr[]);
 
-void store(struct Builder*, int);
-void load (struct Builder*, int);
-void uni  (struct Builder*, int);
-void imm  (struct Builder*, float);
+struct Program* store(struct Program*, int);
+struct Program* load (struct Program*, int);
+struct Program* uni  (struct Program*, int);
+struct Program* imm  (struct Program*, float);
 
-void mul(struct Builder*);
-void add(struct Builder*);
+struct Program* mul(struct Program*);
+struct Program* add(struct Program*);
