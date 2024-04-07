@@ -11,6 +11,19 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
+static void test_build(int const loops) {
+    for (int i = 0; i < loops; i++) {
+        struct Builder *b = builder();
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    2);
+        mul  (b      );
+        add  (b      );
+        store(b,    1);
+        free(compile(b));
+    }
+}
+
 static void test_empty(int const loops) {
     struct Program *p = compile(builder());
 
@@ -61,6 +74,7 @@ int main(int argc, char* argv[]) {
     int const   loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "3xp2";
 
+    test(build);
     test(empty);
     test(3xp2);
 
