@@ -58,19 +58,8 @@ static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
 
     if (is_pow2_or_zero(N)) {
-        // E.g. N=4 -> 5,
-        //   N=4: abc< ABC=
-        //   ~~>  abc< ABC= .... ....
-        p = realloc(p, sizeof *p + sizeof *p->head * 4 * (size_t)N);
-        p->body = p->head + 2*N;
-
-        // Move existing body instructions to new back half:
-        //   N=4: abc< ABC= .... ....
-        //   ~~>  abc< .... ABC= ....
-        struct Inst const *old_body = p->head + N;
-        for (int i = 0; i < N; i++) {
-            p->body[i] = old_body[i];
-        }
+        p = realloc(p, sizeof *p + sizeof *p->head * (size_t)N * 4);
+        memcpy(p->body = p->head+2*N, p->head+N, sizeof *p->head * (size_t)N);
     }
 
     assert(p->head[N-1].fn == head);
