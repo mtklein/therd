@@ -9,11 +9,11 @@ struct Inst;
 struct Program;
 
 typedef vec(float) F;
-typedef void Fn(struct Program const*, struct Inst const*, int, int, void*[], F,F,F,F, F,F,F,F);
+typedef void Fn(struct Inst const*, int, int, void*[], F,F,F,F, F,F,F,F);
 
 struct Inst {
     Fn *fn;
-    union { float imm; int ix; void *unused; };
+    union { float imm; int ix; void *ptr; };
 };
 
 struct Program {
@@ -50,10 +50,9 @@ static void push(struct Builder *b, struct Inst head, struct Inst body) {
     b->body[b->insts++] = body;
 }
 
-#define next ip[1].fn(p,ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
-#define defn(name) \
-    static void name(struct Program const *p, struct Inst const *ip, int i, int n, void* ptr[], \
-                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+#define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
+                                    F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 
 defn(mul_2) { v0 *= v1; next; }
 defn(mul_3) { v1 *= v2; next; }
@@ -181,32 +180,33 @@ void imm(struct Builder *b, float imm) {
     push(b,inst,inst);
 }
 
-static void head(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
+static void head(struct Inst const *ip, int i, int const n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    (void)ip;
+    struct Program const *p = ip->ptr;
     if (n % K) {
-        p->head->fn(p,p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        p->head->fn(p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     } else if (n) {
-        p->body->fn(p,p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        p->body->fn(p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
-static void body(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
+static void body(struct Inst const *ip, int i, int const n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    (void)ip;
+    struct Inst const *body = ip->ptr;
     if (n > K) {
-        p->body->fn(p,p->body,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        body->fn(body,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
 
 struct Program* done(struct Builder *b) {
-    push(b, (struct Inst){.fn=head}, (struct Inst){.fn=body});
-    b->p.head = b->head;
-    return &b->p;
+    struct Program *p = &b->p;
+    push(b, (struct Inst){.fn=head, .ptr=p}, (struct Inst){.fn=body, .ptr=p->body});
+    p->head = b->head;
+    return p;
 }
 
 void run(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        p->head->fn(p,p->head,0,n,ptr, z,z,z,z, z,z,z,z);
+        p->head->fn(p->head,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
