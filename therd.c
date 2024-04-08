@@ -24,7 +24,7 @@ struct Builder {
     union {
         struct {
             struct Inst *body;
-            int          insts,depth;
+            int          last,depth;
         };
         struct Program p;
     };
@@ -39,16 +39,16 @@ size_t builder_size(int insts) {
 
 struct Builder* builder(void *buf, size_t sz) {
     struct Builder *b = buf;
-    b->insts = 0;
-    b->depth = 0;
-    b->body  = b->head + (sz - sizeof *b)/2 / sizeof(struct Inst);
+    b->last  = -1;
+    b->depth =  0;
+    b->body  =  b->head + (sz - sizeof *b)/2 / sizeof(struct Inst);
     return b;
 }
 
 static void push(struct Builder *b, int delta, struct Inst head, struct Inst body) {
     b->depth += delta;
-    b->head[b->insts  ] = head;
-    b->body[b->insts++] = body;
+    b->head[++b->last] = head;
+    b->body[  b->last] = body;
 }
 
 #define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
@@ -91,8 +91,8 @@ void add(struct Builder *b) {
     struct { Fn *mul,*mad; } const fuse[9] = {
         [2]={mul_3,mad_3}, {mul_4,mad_4}, {mul_5,mad_5}, {mul_6,mad_6}, {mul_7,mad_7}, {mul_8,mad_8}
     };
-    if (b->head[b->insts-1].fn == fuse[b->depth].mul) {
-        b->insts--;
+    if (b->head[b->last].fn == fuse[b->depth].mul) {
+        b->last--;
         struct Inst inst = { .fn=fuse[b->depth].mad };
         push(b,-1,inst,inst);
         return;
