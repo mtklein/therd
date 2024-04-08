@@ -82,9 +82,9 @@ defn(mad_3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->head[b->insts - 2].fn == mul_3) {
-        b->head[b->insts - 2].fn =  mad_3;
-        b->body[b->insts - 2].fn =  mad_3;
+    if (b->head[b->insts - 1].fn == mul_3) {
+        b->head[b->insts - 1].fn =  mad_3;
+        b->body[b->insts - 1].fn =  mad_3;
         b->depth += -1;
         return;
     }
