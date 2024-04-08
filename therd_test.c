@@ -13,7 +13,7 @@ static _Bool equiv(float x, float y) {
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program();
+        struct Program *p = program(NULL);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
@@ -24,8 +24,23 @@ static void test_build(int const loops) {
     }
 }
 
+static void test_reuse(int const loops) {
+    void *buf = NULL;
+    for (int i = 0; i < loops; i++) {
+        struct Program *p = program(buf);
+        p = imm  (p, 2.0f);
+        p = load (p,    0);
+        p = uni  (p,    2);
+        p = mul  (p      );
+        p = add  (p      );
+        p = store(p,    1);
+        buf = p;
+    }
+    free(buf);
+}
+
 static void test_empty(int const loops) {
-    struct Program *p = program();
+    struct Program *p = program(NULL);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -42,7 +57,7 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    struct Program *p = program();
+    struct Program *p = program(NULL);
     p = imm  (p, 2.0f);
     p = load (p,    0);
     p = uni  (p,    2);
@@ -71,6 +86,7 @@ int main(int argc, char* argv[]) {
     char const *bench = argc > 2 ?      argv[2]  : "3xp2";
 
     test(build);
+    test(reuse);
     test(empty);
     test(3xp2);
 

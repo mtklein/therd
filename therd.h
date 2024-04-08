@@ -1,6 +1,6 @@
 #pragma once
 
-struct Program* program(void);
+struct Program* program(void*);
 void run(struct Program const*, int n, void* ptr[]);
 
 struct Program* store(struct Program*, int);

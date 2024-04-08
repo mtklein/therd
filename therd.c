@@ -40,8 +40,8 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
     }
 }
 
-struct Program* program(void) {
-    struct Program *p = malloc(sizeof *p + 2 * sizeof *p->head);
+struct Program* program(void *buf) {
+    struct Program *p = realloc(buf, sizeof *p + 2 * sizeof *p->head);
     p->depth   = 0;
     p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
     p->body    = p->head + p->insts;
