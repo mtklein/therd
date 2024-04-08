@@ -125,7 +125,7 @@ void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
     static Fn *hfn[9] = {0,storeH_1,storeH_2,storeH_3,storeH_4,storeH_5,storeH_6,storeH_7,storeH_8},
               *bfn[9] = {0,storeB_1,storeB_2,storeB_3,storeB_4,storeB_5,storeB_6,storeB_7,storeB_8};
-    push(b, 0, (struct Inst){.fn=hfn[b->depth], .ix=ix}
+    push(b,-1, (struct Inst){.fn=hfn[b->depth], .ix=ix}
              , (struct Inst){.fn=bfn[b->depth], .ix=ix});
 }
 
@@ -152,8 +152,8 @@ void load(struct Builder *b, int ix) {
     static Fn *hfn[9] = {loadH_0,loadH_1,loadH_2,loadH_3,loadH_4,loadH_5,loadH_6,loadH_7,0},
               *bfn[9] = {loadB_0,loadB_1,loadB_2,loadB_3,loadB_4,loadB_5,loadB_6,loadB_7,0};
 
-    push(b, +1, (struct Inst){.fn=hfn[b->depth], .ix=ix}
-              , (struct Inst){.fn=bfn[b->depth], .ix=ix});
+    push(b,+1, (struct Inst){.fn=hfn[b->depth], .ix=ix}
+             , (struct Inst){.fn=bfn[b->depth], .ix=ix});
 }
 
 #define splat(T,v) (((T){0} + 1) * (v))
