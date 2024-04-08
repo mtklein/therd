@@ -2,7 +2,7 @@
 #include <stddef.h>
 
 size_t program_buf_size(int insts);
-struct Program* program(void *buf);
+struct Program* program(void *buf, size_t buf_size);
 
 struct Program* store(struct Program*, int);
 struct Program* load (struct Program*, int);

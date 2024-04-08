@@ -45,26 +45,18 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
     }
 }
 
-struct Program* program(void *buf) {
+struct Program* program(void *buf, size_t buf_size) {
     struct Program *p = buf;
     p->depth   = 0;
     p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
-    p->body    = p->head + p->insts;
+    p->body    = p->head + (buf_size - sizeof *p)/2 / sizeof(struct Inst);
     p->head[0] = (struct Inst){.fn=head};
     p->body[0] = (struct Inst){.fn=body};
     return p;
 }
 
-static _Bool is_pow2_or_zero(int x) {
-    return 0 == (x & (x-1));
-}
-
 static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
-
-    if (is_pow2_or_zero(N)) {
-        memcpy(p->body = p->head+2*N, p->head+N, sizeof *p->head * (size_t)N);
-    }
 
     assert(p->head[N-1].fn == head);
     assert(p->body[N-1].fn == body);
