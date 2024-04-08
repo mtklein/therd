@@ -189,7 +189,7 @@ void imm(struct Builder *b, float imm) {
     push(b,+1,inst,inst);
 }
 
-static void head(struct Inst const *ip, int i, int const n, void* ptr[],
+static void head(struct Inst const *ip, int i, int n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     struct Program const *p = ip->ptr;
     if (n % K) {
@@ -198,7 +198,7 @@ static void head(struct Inst const *ip, int i, int const n, void* ptr[],
         p->body->fn(p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
-static void body(struct Inst const *ip, int i, int const n, void* ptr[],
+static void body(struct Inst const *ip, int i, int n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     struct Inst const *body = ip->ptr;
     if (n > K) {
@@ -214,7 +214,7 @@ struct Program* done(struct Builder *b) {
     return p;
 }
 
-void run(struct Program const *p, int const n, void* ptr[]) {
+void run(struct Program const *p, int n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
         p->head->fn(p->head,0,n,ptr, z,z,z,z, z,z,z,z);
