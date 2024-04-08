@@ -13,50 +13,53 @@ static _Bool equiv(float x, float y) {
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        size_t const sz = program_size(6);
-        struct Program *p = program(malloc(sz), sz);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
-        free(p);
+        size_t const sz = builder_size(6);
+        struct Builder *b = builder(malloc(sz), sz);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    2);
+        mul  (b      );
+        add  (b      );
+        store(b,    1);
+
+        free(done(b));
     }
 }
 
 static void test_reuse(int const loops) {
-    size_t const sz = program_size(6);
+    size_t const sz = builder_size(6);
     void *buf = malloc(sz);
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(buf,sz);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
+        struct Builder *b = builder(buf,sz);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    2);
+        mul  (b      );
+        add  (b      );
+        store(b,    1);
+        (void)done(b);
     }
     free(buf);
 }
 
 static void test_fixed(int const loops) {
     void *buf[128];
-    want(sizeof buf >= program_size(6));
+    want(sizeof buf >= builder_size(6));
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(buf, sizeof buf);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
+        struct Builder *b = builder(buf, sizeof buf);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    2);
+        mul  (b      );
+        add  (b      );
+        store(b,    1);
+        (void)done(b);
     }
 }
 
 static void test_empty(int const loops) {
-    size_t const sz = program_size(0);
-    struct Program *p = program(malloc(sz),sz);
+    size_t const sz = builder_size(0);
+    struct Program *p = done(builder(malloc(sz),sz));
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -73,14 +76,18 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    size_t const sz = program_size(6);
-    struct Program *p = program(malloc(sz),sz);
-    imm  (p, 2.0f);
-    load (p,    0);
-    uni  (p,    2);
-    mul  (p      );
-    add  (p      );
-    store(p,    1);
+    size_t const sz = builder_size(6);
+    struct Program *p;
+    {
+        struct Builder *b = builder(malloc(sz),sz);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    2);
+        mul  (b      );
+        add  (b      );
+        store(b,    1);
+        p = done(b);
+    }
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,

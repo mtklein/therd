@@ -1,15 +1,16 @@
 #pragma once
 #include <stddef.h>
 
-size_t program_size(int insts);
-struct Program* program(void*, size_t);
+size_t builder_size(int insts);
+struct Builder* builder(void*, size_t);
 
-void store(struct Program*, int);
-void load (struct Program*, int);
-void uni  (struct Program*, int);
-void imm  (struct Program*, float);
+void store(struct Builder*, int);
+void load (struct Builder*, int);
+void uni  (struct Builder*, int);
+void imm  (struct Builder*, float);
 
-void mul(struct Program*);
-void add(struct Program*);
+void mul(struct Builder*);
+void add(struct Builder*);
 
+struct Program* done(struct Builder*);
 void run(struct Program const*, int n, void* ptr[]);
