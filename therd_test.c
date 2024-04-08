@@ -11,9 +11,16 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
+static void* just_realloc(void *ptr, size_t sz, void *ctx) {
+    (void)ctx;
+    return realloc(ptr,sz);
+}
+
+static struct allocator const mallocator = { just_realloc, NULL };
+
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(NULL);
+        struct Program *p = program(mallocator, NULL);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
@@ -27,7 +34,7 @@ static void test_build(int const loops) {
 static void test_reuse(int const loops) {
     void *buf = NULL;
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(buf);
+        struct Program *p = program(mallocator, buf);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
@@ -40,7 +47,7 @@ static void test_reuse(int const loops) {
 }
 
 static void test_empty(int const loops) {
-    struct Program *p = program(NULL);
+    struct Program *p = program(mallocator, NULL);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -57,7 +64,7 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    struct Program *p = program(NULL);
+    struct Program *p = program(mallocator, NULL);
     p = imm  (p, 2.0f);
     p = load (p,    0);
     p = uni  (p,    2);

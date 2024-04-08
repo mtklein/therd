@@ -1,6 +1,5 @@
 #include "therd.h"
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define K 4
@@ -18,9 +17,10 @@ struct Inst {
 };
 
 struct Program {
-    int          insts,depth;
-    struct Inst *body;
-    struct Inst  head[];
+    struct allocator a;
+    int              insts,depth;
+    struct Inst     *body;
+    struct Inst      head[];
 };
 
 static void head(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
@@ -40,8 +40,9 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
     }
 }
 
-struct Program* program(void *buf) {
-    struct Program *p = realloc(buf, sizeof *p + 2 * sizeof *p->head);
+struct Program* program(struct allocator a, void *init) {
+    struct Program *p = a.realloc(init, sizeof *p + 2 * sizeof *p->head, a.ctx);
+    p->a       = a;
     p->depth   = 0;
     p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
     p->body    = p->head + p->insts;
@@ -58,7 +59,7 @@ static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
 
     if (is_pow2_or_zero(N)) {
-        p = realloc(p, sizeof *p + sizeof *p->head * (size_t)N * 4);
+        p = p->a.realloc(p, sizeof *p + sizeof *p->head * (size_t)N * 4, p->a.ctx);
         memcpy(p->body = p->head+2*N, p->head+N, sizeof *p->head * (size_t)N);
     }
 
