@@ -15,12 +15,12 @@ static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
         size_t const sz = program_size(6);
         struct Program *p = program(malloc(sz), sz);
-        p = imm  (p, 2.0f);
-        p = load (p,    0);
-        p = uni  (p,    2);
-        p = mul  (p      );
-        p = add  (p      );
-        p = store(p,    1);
+        imm  (p, 2.0f);
+        load (p,    0);
+        uni  (p,    2);
+        mul  (p      );
+        add  (p      );
+        store(p,    1);
         free(p);
     }
 }
@@ -30,12 +30,12 @@ static void test_reuse(int const loops) {
     void *buf = malloc(sz);
     for (int i = 0; i < loops; i++) {
         struct Program *p = program(buf,sz);
-        p = imm  (p, 2.0f);
-        p = load (p,    0);
-        p = uni  (p,    2);
-        p = mul  (p      );
-        p = add  (p      );
-        p = store(p,    1);
+        imm  (p, 2.0f);
+        load (p,    0);
+        uni  (p,    2);
+        mul  (p      );
+        add  (p      );
+        store(p,    1);
     }
     free(buf);
 }
@@ -45,12 +45,12 @@ static void test_fixed(int const loops) {
     want(sizeof buf >= program_size(6));
     for (int i = 0; i < loops; i++) {
         struct Program *p = program(buf, sizeof buf);
-        p = imm  (p, 2.0f);
-        p = load (p,    0);
-        p = uni  (p,    2);
-        p = mul  (p      );
-        p = add  (p      );
-        p = store(p,    1);
+        imm  (p, 2.0f);
+        load (p,    0);
+        uni  (p,    2);
+        mul  (p      );
+        add  (p      );
+        store(p,    1);
     }
 }
 
@@ -75,12 +75,12 @@ static void test_empty(int const loops) {
 static void test_3xp2(int const loops) {
     size_t const sz = program_size(6);
     struct Program *p = program(malloc(sz),sz);
-    p = imm  (p, 2.0f);
-    p = load (p,    0);
-    p = uni  (p,    2);
-    p = mul  (p      );
-    p = add  (p      );
-    p = store(p,    1);
+    imm  (p, 2.0f);
+    load (p,    0);
+    uni  (p,    2);
+    mul  (p      );
+    add  (p      );
+    store(p,    1);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,

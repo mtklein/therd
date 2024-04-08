@@ -55,7 +55,7 @@ struct Program* program(void *buf, size_t sz) {
     return p;
 }
 
-static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
+static void push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
 
     assert(p->head[N-1].fn == head);
@@ -67,7 +67,6 @@ static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     p->body[N  ] = (struct Inst){.fn=body};
 
     p->insts = N+1;
-    return p;
 }
 
 #define next ip[1].fn(p,ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
@@ -83,11 +82,11 @@ defn(mul_6) { v4 *= v5; next; }
 defn(mul_7) { v5 *= v6; next; }
 defn(mul_8) { v6 *= v7; next; }
 
-struct Program* mul(struct Program *p) {
+void mul(struct Program *p) {
     assert(p->depth >= 2);
     static Fn *fn[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
     struct Inst inst = { .fn=fn[p->depth--] };
-    return push(p,inst,inst);
+    push(p,inst,inst);
 }
 
 defn(add_2) { v0 += v1; next; }
@@ -100,17 +99,17 @@ defn(add_8) { v6 += v7; next; }
 
 defn(mad_3) { v0 += v1*v2; next; }
 
-struct Program* add(struct Program *p) {
+void add(struct Program *p) {
     assert(p->depth >= 2);
     if (p->head[p->insts - 2].fn == mul_3) {
         p->head[p->insts - 2].fn =  mad_3;
         p->body[p->insts - 2].fn =  mad_3;
         p->depth -= 1;
-        return p;
+        return;
     }
     static Fn *fn[9] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8};
     struct Inst inst = { .fn=fn[p->depth--] };
-    return push(p,inst,inst);
+    push(p,inst,inst);
 }
 
 defn(storeH_1) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v0, sizeof v0[0]); next; }
@@ -131,12 +130,12 @@ defn(storeB_6) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v5, sizeof v
 defn(storeB_7) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v6, sizeof v6   ); next; }
 defn(storeB_8) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v7, sizeof v7   ); next; }
 
-struct Program* store(struct Program *p, int ix) {
+void store(struct Program *p, int ix) {
     assert(p->depth >= 1);
     static Fn *hfn[9] = {0,storeH_1,storeH_2,storeH_3,storeH_4,storeH_5,storeH_6,storeH_7,storeH_8},
               *bfn[9] = {0,storeB_1,storeB_2,storeB_3,storeB_4,storeB_5,storeB_6,storeB_7,storeB_8};
-    return push(p, (struct Inst){.fn=hfn[p->depth], .ix=ix}
-                 , (struct Inst){.fn=bfn[p->depth], .ix=ix});
+    push(p, (struct Inst){.fn=hfn[p->depth], .ix=ix}
+          , (struct Inst){.fn=bfn[p->depth], .ix=ix});
 }
 
 defn(loadH_0) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v0, src+i, sizeof v0[0]); next; }
@@ -157,15 +156,14 @@ defn(loadB_5) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v5, src+i, siz
 defn(loadB_6) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v6, src+i, sizeof v6   ); next; }
 defn(loadB_7) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v7, src+i, sizeof v7   ); next; }
 
-struct Program* load(struct Program *p, int ix) {
+void load(struct Program *p, int ix) {
     assert(p->depth < 8);
     static Fn *hfn[9] = {loadH_0,loadH_1,loadH_2,loadH_3,loadH_4,loadH_5,loadH_6,loadH_7,0},
               *bfn[9] = {loadB_0,loadB_1,loadB_2,loadB_3,loadB_4,loadB_5,loadB_6,loadB_7,0};
 
-    p = push(p, (struct Inst){.fn=hfn[p->depth], .ix=ix}
-              , (struct Inst){.fn=bfn[p->depth], .ix=ix});
+    push(p, (struct Inst){.fn=hfn[p->depth], .ix=ix}
+          , (struct Inst){.fn=bfn[p->depth], .ix=ix});
     p->depth += 1;
-    return p;
 }
 
 #define splat(T,v) (((T){0} + 1) * (v))
@@ -178,11 +176,12 @@ defn(uni_4) { float const *uni = ptr[ip->ix]; v4 = splat(F, *uni); next; }
 defn(uni_5) { float const *uni = ptr[ip->ix]; v5 = splat(F, *uni); next; }
 defn(uni_6) { float const *uni = ptr[ip->ix]; v6 = splat(F, *uni); next; }
 defn(uni_7) { float const *uni = ptr[ip->ix]; v7 = splat(F, *uni); next; }
-struct Program* uni(struct Program *p, int ix) {
+
+void uni(struct Program *p, int ix) {
     assert(p->depth < 8);
     static Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
     struct Inst inst = {.fn=fn[p->depth++], .ix=ix};
-    return push(p,inst,inst);
+    push(p,inst,inst);
 }
 
 defn(imm_0) { v0 = splat(F, ip->imm); next; }
@@ -193,11 +192,12 @@ defn(imm_4) { v4 = splat(F, ip->imm); next; }
 defn(imm_5) { v5 = splat(F, ip->imm); next; }
 defn(imm_6) { v6 = splat(F, ip->imm); next; }
 defn(imm_7) { v7 = splat(F, ip->imm); next; }
-struct Program* imm(struct Program *p, float imm) {
+
+void imm(struct Program *p, float imm) {
     assert(p->depth < 8);
     static Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
     struct Inst inst = {.fn=fn[p->depth++], .imm=imm};
-    return push(p,inst,inst);
+    push(p,inst,inst);
 }
 
 void run(struct Program const *p, int const n, void* ptr[]) {
