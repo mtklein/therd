@@ -46,6 +46,25 @@ static void test_reuse(int const loops) {
     free(buf);
 }
 
+static void* ctx_realloc(void *ptr, size_t sz, void *ctx) {
+    (void)ptr;
+    (void)sz;
+    return ctx;
+}
+
+static void test_fixed(int const loops) {
+    void *buf[128];
+    for (int i = 0; i < loops; i++) {
+        struct Program *p = program((struct allocator){ctx_realloc,buf}, NULL);
+        p = imm  (p, 2.0f);
+        p = load (p,    0);
+        p = uni  (p,    2);
+        p = mul  (p      );
+        p = add  (p      );
+        p = store(p,    1);
+    }
+}
+
 static void test_empty(int const loops) {
     struct Program *p = program(mallocator, NULL);
 
@@ -94,6 +113,8 @@ int main(int argc, char* argv[]) {
 
     test(build);
     test(reuse);
+    test(fixed);
+
     test(empty);
     test(3xp2);
 
