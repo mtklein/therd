@@ -17,13 +17,18 @@ struct Inst {
 };
 
 struct Program {
-    struct Inst *body;
+    struct Inst *body,*head;
 };
 
 struct Builder {
-    struct Program p;
-    int            insts,depth;
-    struct Inst    head[];
+    union {
+        struct {
+            struct Inst *body;
+            int          insts,depth;
+        };
+        struct Program p;
+    };
+    struct Inst head[];
 };
 
 size_t builder_size(int insts) {
@@ -34,15 +39,15 @@ size_t builder_size(int insts) {
 
 struct Builder* builder(void *buf, size_t sz) {
     struct Builder *b = buf;
-    b->insts  = 0;
-    b->depth  = 0;
-    b->p.body = b->head + (sz - sizeof *b)/2 / sizeof(struct Inst);
+    b->insts = 0;
+    b->depth = 0;
+    b->body  = b->head + (sz - sizeof *b)/2 / sizeof(struct Inst);
     return b;
 }
 
 static void push(struct Builder *b, struct Inst head, struct Inst body) {
-    b->  head[b->insts  ] = head;
-    b->p.body[b->insts++] = body;
+    b->head[b->insts  ] = head;
+    b->body[b->insts++] = body;
 }
 
 #define next ip[1].fn(p,ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
@@ -77,9 +82,9 @@ defn(mad_3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->  head[b->insts - 2].fn == mul_3) {
-        b->  head[b->insts - 2].fn =  mad_3;
-        b->p.body[b->insts - 2].fn =  mad_3;
+    if (b->head[b->insts - 2].fn == mul_3) {
+        b->head[b->insts - 2].fn =  mad_3;
+        b->body[b->insts - 2].fn =  mad_3;
         b->depth -= 1;
         return;
     }
@@ -180,8 +185,7 @@ static void head(struct Program const *p, struct Inst const *ip, int i, int cons
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     (void)ip;
     if (n % K) {
-        struct Builder const *b = (struct Builder const*)p;
-        b->head->fn(p,b->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        p->head->fn(p,p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     } else if (n) {
         p->body->fn(p,p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
@@ -196,13 +200,13 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
 
 struct Program* done(struct Builder *b) {
     push(b, (struct Inst){.fn=head}, (struct Inst){.fn=body});
+    b->p.head = b->head;
     return &b->p;
 }
 
 void run(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        struct Builder const *b = (struct Builder const *)p;
-        b->head->fn(p,b->head,0,n,ptr, z,z,z,z, z,z,z,z);
+        p->head->fn(p,p->head,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
