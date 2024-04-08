@@ -13,7 +13,7 @@ static _Bool equiv(float x, float y) {
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        size_t const sz = program_buf_size(6);
+        size_t const sz = program_size(6);
         struct Program *p = program(malloc(sz), sz);
         p = imm  (p, 2.0f);
         p = load (p,    0);
@@ -26,7 +26,7 @@ static void test_build(int const loops) {
 }
 
 static void test_reuse(int const loops) {
-    size_t sz = program_buf_size(6);
+    size_t const sz = program_size(6);
     void *buf = malloc(sz);
     for (int i = 0; i < loops; i++) {
         struct Program *p = program(buf,sz);
@@ -42,7 +42,7 @@ static void test_reuse(int const loops) {
 
 static void test_fixed(int const loops) {
     void *buf[128];
-    want(sizeof buf >= program_buf_size(6));
+    want(sizeof buf >= program_size(6));
     for (int i = 0; i < loops; i++) {
         struct Program *p = program(buf, sizeof buf);
         p = imm  (p, 2.0f);
@@ -55,7 +55,7 @@ static void test_fixed(int const loops) {
 }
 
 static void test_empty(int const loops) {
-    size_t const sz = program_buf_size(0);
+    size_t const sz = program_size(0);
     struct Program *p = program(malloc(sz),sz);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
@@ -73,7 +73,7 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    size_t const sz = program_buf_size(6);
+    size_t const sz = program_size(6);
     struct Program *p = program(malloc(sz),sz);
     p = imm  (p, 2.0f);
     p = load (p,    0);

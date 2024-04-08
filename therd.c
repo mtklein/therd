@@ -22,7 +22,7 @@ struct Program {
     struct Inst  head[];
 };
 
-size_t program_buf_size(int insts) {
+size_t program_size(int insts) {
     insts += 1;
     insts *= 2;
     return sizeof(struct Program) + sizeof(struct Inst) * (size_t)insts;
@@ -45,11 +45,11 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
     }
 }
 
-struct Program* program(void *buf, size_t buf_size) {
+struct Program* program(void *buf, size_t sz) {
     struct Program *p = buf;
     p->depth   = 0;
     p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
-    p->body    = p->head + (buf_size - sizeof *p)/2 / sizeof(struct Inst);
+    p->body    = p->head + (sz - sizeof *p)/2 / sizeof(struct Inst);
     p->head[0] = (struct Inst){.fn=head};
     p->body[0] = (struct Inst){.fn=body};
     return p;
