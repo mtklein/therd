@@ -88,12 +88,11 @@ defn(mad_8) { v5 += v6*v7; next; }
 void add(struct Builder *b) {
     assert(b->depth >= 2);
 
-    struct { Fn *mul,*mad; } const fuse[9] = {
-        [2]={mul_3,mad_3}, {mul_4,mad_4}, {mul_5,mad_5}, {mul_6,mad_6}, {mul_7,mad_7}, {mul_8,mad_8}
-    };
-    if (b->head[b->last].fn == fuse[b->depth].mul) {
+    static Fn *mul[9] = {0,0,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8,0},
+              *mad[9] = {0,0,mad_3,mad_4,mad_5,mad_6,mad_7,mad_8,0};
+    if (b->head[b->last].fn == mul[b->depth]) {
         b->last--;
-        struct Inst inst = { .fn=fuse[b->depth].mad };
+        struct Inst inst = { .fn=mad[b->depth] };
         push(b,-1,inst,inst);
         return;
     }
