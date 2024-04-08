@@ -211,6 +211,7 @@ struct Program* done(struct Builder *b) {
     struct Program *p = &b->p;
     push(b, 0, (struct Inst){.fn=head, .ptr=p}, (struct Inst){.fn=body, .ptr=p->body});
     p->head = b->head;
+    assert((void*)b == (void*)p);
     return p;
 }
 
