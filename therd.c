@@ -45,7 +45,8 @@ struct Builder* builder(void *buf, size_t sz) {
     return b;
 }
 
-static void push(struct Builder *b, struct Inst head, struct Inst body) {
+static void push(struct Builder *b, int delta, struct Inst head, struct Inst body) {
+    b->depth += delta;
     b->head[b->insts  ] = head;
     b->body[b->insts++] = body;
 }
@@ -65,8 +66,8 @@ defn(mul_8) { v6 *= v7; next; }
 void mul(struct Builder *b) {
     assert(b->depth >= 2);
     static Fn *fn[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
-    struct Inst inst = { .fn=fn[b->depth--] };
-    push(b,inst,inst);
+    struct Inst inst = { .fn=fn[b->depth] };
+    push(b,-1,inst,inst);
 }
 
 defn(add_2) { v0 += v1; next; }
@@ -84,12 +85,12 @@ void add(struct Builder *b) {
     if (b->head[b->insts - 2].fn == mul_3) {
         b->head[b->insts - 2].fn =  mad_3;
         b->body[b->insts - 2].fn =  mad_3;
-        b->depth -= 1;
+        b->depth += -1;
         return;
     }
     static Fn *fn[9] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8};
-    struct Inst inst = { .fn=fn[b->depth--] };
-    push(b,inst,inst);
+    struct Inst inst = { .fn=fn[b->depth] };
+    push(b,-1,inst,inst);
 }
 
 defn(storeH_1) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v0, sizeof v0[0]); next; }
@@ -114,8 +115,8 @@ void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
     static Fn *hfn[9] = {0,storeH_1,storeH_2,storeH_3,storeH_4,storeH_5,storeH_6,storeH_7,storeH_8},
               *bfn[9] = {0,storeB_1,storeB_2,storeB_3,storeB_4,storeB_5,storeB_6,storeB_7,storeB_8};
-    push(b, (struct Inst){.fn=hfn[b->depth], .ix=ix}
-          , (struct Inst){.fn=bfn[b->depth], .ix=ix});
+    push(b, 0, (struct Inst){.fn=hfn[b->depth], .ix=ix}
+             , (struct Inst){.fn=bfn[b->depth], .ix=ix});
 }
 
 defn(loadH_0) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v0, src+i, sizeof v0[0]); next; }
@@ -141,9 +142,8 @@ void load(struct Builder *b, int ix) {
     static Fn *hfn[9] = {loadH_0,loadH_1,loadH_2,loadH_3,loadH_4,loadH_5,loadH_6,loadH_7,0},
               *bfn[9] = {loadB_0,loadB_1,loadB_2,loadB_3,loadB_4,loadB_5,loadB_6,loadB_7,0};
 
-    push(b, (struct Inst){.fn=hfn[b->depth], .ix=ix}
-          , (struct Inst){.fn=bfn[b->depth], .ix=ix});
-    b->depth += 1;
+    push(b, +1, (struct Inst){.fn=hfn[b->depth], .ix=ix}
+              , (struct Inst){.fn=bfn[b->depth], .ix=ix});
 }
 
 #define splat(T,v) (((T){0} + 1) * (v))
@@ -160,8 +160,8 @@ defn(uni_7) { float const *uni = ptr[ip->ix]; v7 = splat(F, *uni); next; }
 void uni(struct Builder *b, int ix) {
     assert(b->depth < 8);
     static Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
-    struct Inst inst = {.fn=fn[b->depth++], .ix=ix};
-    push(b,inst,inst);
+    struct Inst inst = {.fn=fn[b->depth], .ix=ix};
+    push(b,+1,inst,inst);
 }
 
 defn(imm_0) { v0 = splat(F, ip->imm); next; }
@@ -176,8 +176,8 @@ defn(imm_7) { v7 = splat(F, ip->imm); next; }
 void imm(struct Builder *b, float imm) {
     assert(b->depth < 8);
     static Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
-    struct Inst inst = {.fn=fn[b->depth++], .imm=imm};
-    push(b,inst,inst);
+    struct Inst inst = {.fn=fn[b->depth], .imm=imm};
+    push(b,+1,inst,inst);
 }
 
 static void head(struct Inst const *ip, int i, int const n, void* ptr[],
@@ -199,7 +199,7 @@ static void body(struct Inst const *ip, int i, int const n, void* ptr[],
 
 struct Program* done(struct Builder *b) {
     struct Program *p = &b->p;
-    push(b, (struct Inst){.fn=head, .ptr=p}, (struct Inst){.fn=body, .ptr=p->body});
+    push(b, 0, (struct Inst){.fn=head, .ptr=p}, (struct Inst){.fn=body, .ptr=p->body});
     p->head = b->head;
     return p;
 }
