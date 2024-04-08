@@ -17,11 +17,16 @@ struct Inst {
 };
 
 struct Program {
-    struct allocator a;
-    int              insts,depth;
-    struct Inst     *body;
-    struct Inst      head[];
+    int          insts,depth;
+    struct Inst *body;
+    struct Inst  head[];
 };
+
+size_t program_buf_size(int insts) {
+    insts += 1;
+    insts *= 2;
+    return sizeof(struct Program) + sizeof(struct Inst) * (size_t)insts;
+}
 
 static void head(struct Program const *p, struct Inst const *ip, int i, int const n, void* ptr[],
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
@@ -40,9 +45,8 @@ static void body(struct Program const *p, struct Inst const *ip, int i, int cons
     }
 }
 
-struct Program* program(struct allocator a, void *init) {
-    struct Program *p = a.realloc(init, sizeof *p + 2 * sizeof *p->head, a.ctx);
-    p->a       = a;
+struct Program* program(void *buf) {
+    struct Program *p = buf;
     p->depth   = 0;
     p->insts   = 1;  // Logical, physically pairs of Inst, from p->head and p->body.
     p->body    = p->head + p->insts;
@@ -59,7 +63,6 @@ static struct Program* push(struct Program *p, struct Inst a, struct Inst A) {
     int const N = p->insts;
 
     if (is_pow2_or_zero(N)) {
-        p = p->a.realloc(p, sizeof *p + sizeof *p->head * (size_t)N * 4, p->a.ctx);
         memcpy(p->body = p->head+2*N, p->head+N, sizeof *p->head * (size_t)N);
     }
 

@@ -1,12 +1,8 @@
 #pragma once
 #include <stddef.h>
 
-struct allocator {
-    void* (*realloc)(void*, size_t, void *ctx);
-    void *ctx;
-};
-
-struct Program* program(struct allocator, void *init);
+size_t program_buf_size(int insts);
+struct Program* program(void *buf);
 
 struct Program* store(struct Program*, int);
 struct Program* load (struct Program*, int);

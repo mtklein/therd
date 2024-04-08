@@ -11,51 +11,39 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
-static void* just_realloc(void *ptr, size_t sz, void *ctx) {
-    (void)ctx;
-    return realloc(ptr,sz);
-}
-
-static struct allocator const mallocator = { just_realloc, NULL };
-
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(mallocator, NULL);
+        void *buf = malloc(program_buf_size(6));
+        struct Program *p = program(buf);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
         p = mul  (p      );
         p = add  (p      );
         p = store(p,    1);
-        free(p);
+        free(buf);
     }
 }
 
 static void test_reuse(int const loops) {
-    void *buf = NULL;
+    void *buf = malloc(program_buf_size(6));
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(mallocator, buf);
+        struct Program *p = program(buf);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
         p = mul  (p      );
         p = add  (p      );
         p = store(p,    1);
-        buf = p;
     }
     free(buf);
 }
 
-static void* ctx_realloc(void *ptr, size_t sz, void *ctx) {
-    (void)ptr;
-    (void)sz;
-    return ctx;
-}
-
 static void test_fixed(int const loops) {
     void *buf[128];
+    want(sizeof(buf) >= program_buf_size(6));
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program((struct allocator){ctx_realloc,buf}, NULL);
+        struct Program *p = program(buf);
         p = imm  (p, 2.0f);
         p = load (p,    0);
         p = uni  (p,    2);
@@ -66,7 +54,8 @@ static void test_fixed(int const loops) {
 }
 
 static void test_empty(int const loops) {
-    struct Program *p = program(mallocator, NULL);
+    void *buf = malloc(program_buf_size(0));
+    struct Program *p = program(buf);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
@@ -75,7 +64,7 @@ static void test_empty(int const loops) {
     for (int i = 0; i < loops; i++) {
         run(p, len(src), (void*[]){src,dst,&uni});
     }
-    free(p);
+    free(buf);
 
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 0));
@@ -83,7 +72,8 @@ static void test_empty(int const loops) {
 }
 
 static void test_3xp2(int const loops) {
-    struct Program *p = program(mallocator, NULL);
+    void *buf = malloc(program_buf_size(6));
+    struct Program *p = program(buf);
     p = imm  (p, 2.0f);
     p = load (p,    0);
     p = uni  (p,    2);
@@ -98,7 +88,7 @@ static void test_3xp2(int const loops) {
     for (int i = 0; i < loops; i++) {
         run(p, len(src), (void*[]){src,dst,&uni});
     }
-    free(p);
+    free(buf);
 
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 3*src[i] + 2));
