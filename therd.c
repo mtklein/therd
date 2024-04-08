@@ -17,13 +17,13 @@ struct Inst {
 };
 
 struct Program {
-    struct Inst *head,*body;
+    struct Inst *body;
 };
 
 struct Builder {
     struct Program p;
     int            insts,depth;
-    struct Inst    inst[];
+    struct Inst    head[];
 };
 
 size_t builder_size(int insts) {
@@ -36,13 +36,12 @@ struct Builder* builder(void *buf, size_t sz) {
     struct Builder *b = buf;
     b->insts  = 0;
     b->depth  = 0;
-    b->p.head = b->inst;
-    b->p.body = b->inst + (sz - sizeof *b)/2 / sizeof(struct Inst);
+    b->p.body = b->head + (sz - sizeof *b)/2 / sizeof(struct Inst);
     return b;
 }
 
 static void push(struct Builder *b, struct Inst head, struct Inst body) {
-    b->p.head[b->insts  ] = head;
+    b->  head[b->insts  ] = head;
     b->p.body[b->insts++] = body;
 }
 
@@ -78,8 +77,8 @@ defn(mad_3) { v0 += v1*v2; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->p.head[b->insts - 2].fn == mul_3) {
-        b->p.head[b->insts - 2].fn =  mad_3;
+    if (b->  head[b->insts - 2].fn == mul_3) {
+        b->  head[b->insts - 2].fn =  mad_3;
         b->p.body[b->insts - 2].fn =  mad_3;
         b->depth -= 1;
         return;
@@ -181,7 +180,8 @@ static void head(struct Program const *p, struct Inst const *ip, int i, int cons
                  F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     (void)ip;
     if (n % K) {
-        p->head->fn(p,p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        struct Builder const *b = (struct Builder const*)p;
+        b->head->fn(p,b->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     } else if (n) {
         p->body->fn(p,p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
@@ -202,6 +202,7 @@ struct Program* done(struct Builder *b) {
 void run(struct Program const *p, int const n, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        p->head->fn(p,p->head,0,n,ptr, z,z,z,z, z,z,z,z);
+        struct Builder const *b = (struct Builder const *)p;
+        b->head->fn(p,b->head,0,n,ptr, z,z,z,z, z,z,z,z);
     }
 }
