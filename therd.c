@@ -79,15 +79,25 @@ defn(add_7) { v5 += v6; next; }
 defn(add_8) { v6 += v7; next; }
 
 defn(mad_3) { v0 += v1*v2; next; }
+defn(mad_4) { v1 += v2*v3; next; }
+defn(mad_5) { v2 += v3*v4; next; }
+defn(mad_6) { v3 += v4*v5; next; }
+defn(mad_7) { v4 += v5*v6; next; }
+defn(mad_8) { v5 += v6*v7; next; }
 
 void add(struct Builder *b) {
     assert(b->depth >= 2);
-    if (b->head[b->insts - 1].fn == mul_3) {
-        b->head[b->insts - 1].fn =  mad_3;
-        b->body[b->insts - 1].fn =  mad_3;
-        b->depth += -1;
+
+    struct { Fn *mul,*mad; } const fuse[9] = {
+        [2]={mul_3,mad_3}, {mul_4,mad_4}, {mul_5,mad_5}, {mul_6,mad_6}, {mul_7,mad_7}, {mul_8,mad_8}
+    };
+    if (b->head[b->insts-1].fn == fuse[b->depth].mul) {
+        b->insts--;
+        struct Inst inst = { .fn=fuse[b->depth].mad };
+        push(b,-1,inst,inst);
         return;
     }
+
     static Fn *fn[9] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8};
     struct Inst inst = { .fn=fn[b->depth] };
     push(b,-1,inst,inst);
