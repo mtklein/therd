@@ -308,35 +308,53 @@ void run(struct Program const *p, int N, void* ptr[]) {
 
 static void head_loop(struct Inst const *ip, int i, int N, void* ptr[],
                       F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    // When we arrive at head_loop, we've just finished one pass of head instructions.
+    // When we arrive at head_loop we've just finished one program instance,
+    // one pass of head instructions:
     //    [   inst    ]    (p->head)
     //    [   inst    ]
     //    [   inst    ]
     //    [   inst    ]
     //    [ head_loop ]
-    i++;
-    N--;
-
-    // If we're still not aligned with K, loop back to head, otherwise continue on to the body.
-    struct Program const *p = ip->ptr;
-    struct Inst const *jump = N%K ? p->head
-                                  : p->body;
-    jump->fn(jump,i,N,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    i += 1;
+    N -= 1;
+    if (N > 0) {
+        // If we're still not aligned with K, loop back to head, otherwise continue on to the body.
+        struct Program const *p = ip->ptr;
+        struct Inst const *jump = N%K ? p->head
+                                      : p->body;
+        jump->fn(jump,i,N,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    }
 }
 static void body_loop(struct Inst const *ip, int i, int N, void* ptr[],
                       F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
-    struct Inst const *body = ip->ptr;
-    if (N > K) {
-        body->fn(body,i+K,N-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+    // Just as in head_loop(), except now we've just finished K program instances.
+    //    [   inst    ]    (p->body)
+    //    [   inst    ]
+    //    [   inst    ]
+    //    [   inst    ]
+    //    [ body_loop ]
+    i += K;
+    N -= K;
+    if (N > 0) {
+        // Can't have come unaligned to K now, so always just jump back to the body pointer.
+        struct Inst const *body = ip->ptr;
+        body->fn(body,i,N,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
 
 struct Program* done(struct Builder *b) {
+    // A final dusting that connects it all together.
+    // Turn our Builder into a Program by...
     struct Program *p = &b->p;
+
+    // ... appending the head_loop and body_loop instructions (with the pointers they need)
     append(b, 0, (struct Inst){.fn=head_loop, .ptr=p}
                , (struct Inst){.fn=body_loop, .ptr=p->body});
+    // ... and filling in p->head pointer.  We could recalculate this every time but this is easier.
     p->head = b->head;
+
+    // As in builder(), we've taken care that the user buffer pointer is the
+    // Builder* and also is the Program*.  I just think that's neat.  Makes it easy to call free().
     assert((void*)b == (void*)p);
     return p;
 }
-

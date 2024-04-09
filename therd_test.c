@@ -153,8 +153,35 @@ static void test_one_head(int const loops) {
     free(p);
 
     for (int i = 0; loops == 1 && i < len(buf); i++) {
-        printf("%d %g\n", i, (double)buf[i]);
         want(equiv(buf[i], 3*(float)(i+1) + 2));
+    }
+}
+
+static void test_just_one(int const loops) {
+    size_t const sz = builder_size(6);
+    struct Program *p;
+    {
+        struct Builder *b = builder(malloc(sz),sz);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    1);
+        mul  (b      );
+        add  (b      );
+        store(b,    0);
+        p = done(b);
+    }
+
+    float buf[] = {1,2,3,4,5},
+          uni   = 3.0f;
+
+    for (int i = 0; i < loops; i++) {
+        run(p, 1, (void*[]){buf,&uni});
+    }
+    free(p);
+
+    for (int i = 0; loops == 1 && i < len(buf); i++) {
+        want(equiv(buf[i], i == 0 ? 3*(float)(i+1) + 2
+                                  :   (float)(i+1)    ));
     }
 }
 
@@ -172,6 +199,7 @@ int main(int argc, char* argv[]) {
     test(3xp2);
     test(all_body);
     test(one_head);
+    test(just_one);
 
     return 0;
 }
