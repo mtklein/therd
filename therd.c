@@ -2,19 +2,57 @@
 #include <assert.h>
 #include <string.h>
 
-#define K 4
+// This code uses GCC vector extensions, so it needs GCC or Clang,
+// but should otherwise be pretty portable.
 #define vec(T) T __attribute__((vector_size(K * sizeof(T))))
 
 struct Inst;
 struct Program;
 
+// The F and Fn types are geared for my primary dev machine, an M1 Mac.
+// Its calling convention lets us pass around 8 4-float vector registers.
+// x86-64 machines with System V ABI (Mac, Linux) should also perform well,
+// though they could probably benefit from kicking K up to 8 (AVX) or 16 (512).
+#define K 4
 typedef vec(float) F;
 typedef void Fn(struct Inst const*, int, int, void*[], F,F,F,F, F,F,F,F);
 
+// An instruction has two parts: code to run, and some small data payload.
+// Different instructions use that data payload in different ways.
 struct Inst {
     Fn *fn;
     union { float imm; int ix; void *ptr; };
 };
+
+// A program is structured as two contiguous arrays of Insts, maybe with a gap
+// between, each terminated by a special head_loop or body_loop instruction.
+//
+//    [   inst    ]    (H)
+//    [   inst    ]
+//    [   inst    ]
+//    [   inst    ]
+//    [ head_loop ]
+//    (maybe a gap)
+//    [   inst    ]    (B)
+//    [   inst    ]
+//    [   inst    ]
+//    [   inst    ]
+//    [ body_loop ]
+//
+// The two sequences of Insts conceptually do the same thing, except the head
+// instructions operate on 1 value at a time, while the body instructions
+// operate on full vectors of K values at once.  run() starts things off at the
+// right place, and from there on the head_loop and body_loop special
+// instructions handle all control flow, including eventually returning back to
+// run().
+//
+// In the code below you'll see head and body Inst*.  These point to the Insts
+// marked with (H) and (B), the beginning of the head and body sequences.
+//
+// Other instructions have more regular control flow.  They just do their thing
+// then tail-call into the next instruction.  You'll see them use this next
+// macro to do this:
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
 
 struct Program {
     struct Inst *body,*head;
@@ -51,7 +89,6 @@ static void push(struct Builder *b, int delta, struct Inst head, struct Inst bod
     b->body[  b->last] = body;
 }
 
-#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
 #define defn(name) static void name(struct Inst const *ip, int i, int n, void* ptr[], \
                                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 
@@ -189,8 +226,8 @@ void imm(struct Builder *b, float imm) {
     push(b,+1,inst,inst);
 }
 
-static void head(struct Inst const *ip, int i, int n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+static void head_loop(struct Inst const *ip, int i, int n, void* ptr[],
+                      F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     struct Program const *p = ip->ptr;
     if (n % K) {
         p->head->fn(p->head,i+1,n-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
@@ -198,8 +235,8 @@ static void head(struct Inst const *ip, int i, int n, void* ptr[],
         p->body->fn(p->body,i  ,n  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
-static void body(struct Inst const *ip, int i, int n, void* ptr[],
-                 F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
+static void body_loop(struct Inst const *ip, int i, int n, void* ptr[],
+                      F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     struct Inst const *body = ip->ptr;
     if (n > K) {
         body->fn(body,i+K,n-K,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
@@ -208,15 +245,16 @@ static void body(struct Inst const *ip, int i, int n, void* ptr[],
 
 struct Program* done(struct Builder *b) {
     struct Program *p = &b->p;
-    push(b, 0, (struct Inst){.fn=head, .ptr=p}, (struct Inst){.fn=body, .ptr=p->body});
+    push(b, 0, (struct Inst){.fn=head_loop, .ptr=p}
+             , (struct Inst){.fn=body_loop, .ptr=p->body});
     p->head = b->head;
     assert((void*)b == (void*)p);
     return p;
 }
 
-void run(struct Program const *p, int n, void* ptr[]) {
-    if (n > 0) {
+void run(struct Program const *p, int N, void* ptr[]) {
+    if (N > 0) {
         F z = {0};
-        p->head->fn(p->head,0,n,ptr, z,z,z,z, z,z,z,z);
+        p->head->fn(p->head,0,N,ptr, z,z,z,z, z,z,z,z);
     }
 }
