@@ -314,12 +314,14 @@ static void head_loop(struct Inst const *ip, int i, int N, void* ptr[],
     //    [   inst    ]
     //    [   inst    ]
     //    [ head_loop ]
+    i++;
+    N--;
+
+    // If we're still not aligned with K, loop back to head, otherwise continue on to the body.
     struct Program const *p = ip->ptr;
-    if (N % K) {
-        p->head->fn(p->head,i+1,N-1,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    } else if (N) {
-        p->body->fn(p->body,i  ,N  ,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
-    }
+    struct Inst const *jump = N%K ? p->head
+                                  : p->body;
+    jump->fn(jump,i,N,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
 }
 static void body_loop(struct Inst const *ip, int i, int N, void* ptr[],
                       F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
