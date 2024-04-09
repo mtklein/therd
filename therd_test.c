@@ -103,6 +103,33 @@ static void test_3xp2(int const loops) {
     }
 }
 
+static void test_all_body(int const loops) {
+    size_t const sz = builder_size(6);
+    struct Program *p;
+    {
+        struct Builder *b = builder(malloc(sz),sz);
+        imm  (b, 2.0f);
+        load (b,    0);
+        uni  (b,    1);
+        mul  (b      );
+        add  (b      );
+        store(b,    0);
+        p = done(b);
+    }
+
+    float buf[] = {1,2,3,4,5,6,7,8},
+          uni   = 3.0f;
+
+    for (int i = 0; i < loops; i++) {
+        run(p, len(buf), (void*[]){buf,&uni});
+    }
+    free(p);
+
+    for (int i = 0; loops == 1 && i < len(buf); i++) {
+        want(equiv(buf[i], 3*(float)(i+1) + 2));
+    }
+}
+
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
 int main(int argc, char* argv[]) {
@@ -115,6 +142,7 @@ int main(int argc, char* argv[]) {
 
     test(empty);
     test(3xp2);
+    test(all_body);
 
     return 0;
 }

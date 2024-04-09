@@ -254,7 +254,9 @@ struct Program* done(struct Builder *b) {
 
 void run(struct Program const *p, int N, void* ptr[]) {
     if (N > 0) {
+        struct Inst const *start = N%K ? p->head
+                                       : p->body;
         F z = {0};
-        p->head->fn(p->head,0,N,ptr, z,z,z,z, z,z,z,z);
+        start->fn(start,0,N,ptr, z,z,z,z, z,z,z,z);
     }
 }
