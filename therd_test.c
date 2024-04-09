@@ -120,6 +120,8 @@ static void test_3xp2(int const loops) {
 // As a benchmark it's best compared to 3xp2.  Though this does a little more
 // work, it should run considerably faster, as N=12 needs just 3 body loops
 // instead of N=11 3 head loops and 2 body loops.
+//
+// Also a regression test for when N%K==0.
 static void test_all_body(int const loops) {
     size_t const sz = builder_size(6);
     struct Program *p;
