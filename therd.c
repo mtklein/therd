@@ -1,6 +1,18 @@
 #include "therd.h"
 #include <assert.h>
-#include <string.h>
+
+#if !defined(__has_builtin)
+    #define  __has_builtin(x) 0
+#endif
+
+// TODO: can't seem to work out why using __builtin_memcpy() instead of memcpy()
+// avoids a stack spill in body_store_?().  Doesn't seem to be an aliasing issue?
+// It would be nice to just use memcpy() if I work this out.
+#if __has_builtin(__builtin_memcpy)
+    #define memcpy __builtin_memcpy
+#else
+    #include <string.h>
+#endif
 
 // This code uses GCC vector extensions, so it needs GCC or Clang,
 // but should otherwise be pretty portable.
@@ -210,14 +222,14 @@ defn(head_store_6) { float *dst = ptr[ip->ix]; dst[i] = v5[0]; next; }
 defn(head_store_7) { float *dst = ptr[ip->ix]; dst[i] = v6[0]; next; }
 defn(head_store_8) { float *dst = ptr[ip->ix]; dst[i] = v7[0]; next; }
 
-defn(body_store_1) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v0, sizeof v0); next; }
-defn(body_store_2) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v1, sizeof v1); next; }
-defn(body_store_3) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v2, sizeof v2); next; }
-defn(body_store_4) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v3, sizeof v3); next; }
-defn(body_store_5) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v4, sizeof v4); next; }
-defn(body_store_6) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v5, sizeof v5); next; }
-defn(body_store_7) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v6, sizeof v6); next; }
-defn(body_store_8) { float *dst = ptr[ip->ix]; __builtin_memcpy(dst+i, &v7, sizeof v7); next; }
+defn(body_store_1) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v0, sizeof v0); next; }
+defn(body_store_2) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v1, sizeof v1); next; }
+defn(body_store_3) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v2, sizeof v2); next; }
+defn(body_store_4) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v3, sizeof v3); next; }
+defn(body_store_5) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v4, sizeof v4); next; }
+defn(body_store_6) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v5, sizeof v5); next; }
+defn(body_store_7) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v6, sizeof v6); next; }
+defn(body_store_8) { float *dst = ptr[ip->ix]; memcpy(dst+i, &v7, sizeof v7); next; }
 
 void store(struct Builder *b, int ix) {
     assert(b->depth >= 1);
@@ -238,14 +250,14 @@ defn(head_load_5) { float const *src = ptr[ip->ix]; v5[0] = src[i]; next; }
 defn(head_load_6) { float const *src = ptr[ip->ix]; v6[0] = src[i]; next; }
 defn(head_load_7) { float const *src = ptr[ip->ix]; v7[0] = src[i]; next; }
 
-defn(body_load_0) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v0, src+i, sizeof v0); next; }
-defn(body_load_1) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v1, src+i, sizeof v1); next; }
-defn(body_load_2) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v2, src+i, sizeof v2); next; }
-defn(body_load_3) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v3, src+i, sizeof v3); next; }
-defn(body_load_4) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v4, src+i, sizeof v4); next; }
-defn(body_load_5) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v5, src+i, sizeof v5); next; }
-defn(body_load_6) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v6, src+i, sizeof v6); next; }
-defn(body_load_7) { float const *src = ptr[ip->ix]; __builtin_memcpy(&v7, src+i, sizeof v7); next; }
+defn(body_load_0) { float const *src = ptr[ip->ix]; memcpy(&v0, src+i, sizeof v0); next; }
+defn(body_load_1) { float const *src = ptr[ip->ix]; memcpy(&v1, src+i, sizeof v1); next; }
+defn(body_load_2) { float const *src = ptr[ip->ix]; memcpy(&v2, src+i, sizeof v2); next; }
+defn(body_load_3) { float const *src = ptr[ip->ix]; memcpy(&v3, src+i, sizeof v3); next; }
+defn(body_load_4) { float const *src = ptr[ip->ix]; memcpy(&v4, src+i, sizeof v4); next; }
+defn(body_load_5) { float const *src = ptr[ip->ix]; memcpy(&v5, src+i, sizeof v5); next; }
+defn(body_load_6) { float const *src = ptr[ip->ix]; memcpy(&v6, src+i, sizeof v6); next; }
+defn(body_load_7) { float const *src = ptr[ip->ix]; memcpy(&v7, src+i, sizeof v7); next; }
 
 void load(struct Builder *b, int ix) {
     assert(b->depth < 8);
