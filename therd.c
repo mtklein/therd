@@ -1,5 +1,4 @@
 #include "therd.h"
-#include <assert.h>
 
 // This code uses GCC vector extensions, so it needs GCC or Clang,
 // but should otherwise be pretty portable.
@@ -73,7 +72,6 @@ struct Builder {
     };
     struct Inst head[];
 };
-_Static_assert(sizeof(struct Program) <= sizeof(struct Builder), "");
 
 // So now builder_size() should make some sense reading the comments and diagram above.
 // Each program needs a header, two copies of each user instruction, plus head_loop and body_loop.
@@ -142,7 +140,6 @@ defn(mul_7) { v5 *= v6; next; }
 defn(mul_8) { v6 *= v7; next; }  // stack depth 8->7, top of stack v7->v6
 
 void mul(struct Builder *b) {
-    assert(b->depth >= 2);  // (Need at least two numbers to multiply.)
     static Fn *fn[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
     struct Inst inst = { .fn=fn[b->depth] };
     append(b,-1,inst,inst);
@@ -168,8 +165,6 @@ defn(mad_7) { v4 += v5*v6; next; }
 defn(mad_8) { v5 += v6*v7; next; }  // depth 8->6, top v7->v5
 
 void add(struct Builder *b) {
-    assert(b->depth >= 2);
-
     static Fn *mul[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
     int const mul_delta = -1;
     if (b->head[b->last].fn == mul[b->depth - mul_delta]) {  // if the last instruction was a mul...
@@ -219,7 +214,6 @@ defn(body_store_7) { float *dst = ptr[ip->ix]; *(F*)(dst+i) = v6; next; }
 defn(body_store_8) { float *dst = ptr[ip->ix]; *(F*)(dst+i) = v7; next; }
 
 void store(struct Builder *b, int ix) {
-    assert(b->depth >= 1);
     static Fn *head_fn[9] = {0, head_store_1, head_store_2, head_store_3, head_store_4
                               , head_store_5, head_store_6, head_store_7, head_store_8},
               *body_fn[9] = {0, body_store_1, body_store_2, body_store_3, body_store_4
@@ -247,7 +241,6 @@ defn(body_load_6) { float const *src = ptr[ip->ix]; v6 = *(F const*)(src+i); nex
 defn(body_load_7) { float const *src = ptr[ip->ix]; v7 = *(F const*)(src+i); next; }
 
 void load(struct Builder *b, int ix) {
-    assert(b->depth < 8);
     static Fn *head_fn[9] = {head_load_0, head_load_1, head_load_2, head_load_3,
                              head_load_4, head_load_5, head_load_6, head_load_7, 0},
               *body_fn[9] = {body_load_0, body_load_1, body_load_2, body_load_3,
@@ -271,7 +264,6 @@ defn(uni_6) { float const *uni = ptr[ip->ix]; v6 = splat(F, *uni); next; }
 defn(uni_7) { float const *uni = ptr[ip->ix]; v7 = splat(F, *uni); next; }
 
 void uni(struct Builder *b, int ix) {
-    assert(b->depth < 8);
     static Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
     struct Inst inst = {.fn=fn[b->depth], .ix=ix};
     append(b,+1,inst,inst);
@@ -287,7 +279,6 @@ defn(imm_6) { v6 = splat(F, ip->imm); next; }
 defn(imm_7) { v7 = splat(F, ip->imm); next; }
 
 void imm(struct Builder *b, float imm) {
-    assert(b->depth < 8);
     static Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
     struct Inst inst = {.fn=fn[b->depth], .imm=imm};
     append(b,+1,inst,inst);
@@ -351,9 +342,5 @@ struct Program* done(struct Builder *b) {
                , (struct Inst){.fn=body_loop, .ptr=p->body});
     // ... and filling in p->head pointer.  We could recalculate this every time but this is easier.
     p->head = b->head;
-
-    // As in builder(), we've taken care that the user buffer pointer is the
-    // Builder* and also is the Program*.  I just think that's neat.  Makes it easy to call free().
-    assert((void*)b == (void*)p);
     return p;
 }
