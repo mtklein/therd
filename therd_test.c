@@ -6,10 +6,18 @@
 #define len(x) (int)( sizeof(x) / sizeof(*x) )
 #define want(x) if (!(x)) dprintf(2, "%s:%d want(%s)\n", __FILE__, __LINE__, #x), __builtin_trap()
 
+// This is basically x == y, but also works with NaN.
 static _Bool equiv(float x, float y) {
     return (x <= y && y <= x)
         || (x != x && y != y);
 }
+
+// test_build, test_reuse, test_fixed test a couple different ways to build a program.
+// They're mostly benchmarks rather than tests, but nice to run in any case.
+//   - test_build is the most naive, with a malloc()/free() in the hot loop
+//   - test_reuse also uses malloc()/free(), but once only outside the loop
+//   - test_fixed uses the stack
+// test_build should be the slowest, with test_reuse and test_fixed tied for fastest.
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
@@ -57,6 +65,8 @@ static void test_fixed(int const loops) {
     }
 }
 
+// test_empty makes sure it's safe to run an empty program,
+// and as a benchmark serves as the floor for how fast any other program can run.
 static void test_empty(int const loops) {
     size_t const sz = builder_size(0);
     struct Program *p = done(builder(malloc(sz),sz));
@@ -75,6 +85,8 @@ static void test_empty(int const loops) {
     }
 }
 
+// test_3xp2 (3*x+2) runs a program with some simple math.
+// This is the most "real" of any of the tests.
 static void test_3xp2(int const loops) {
     size_t const sz = builder_size(6);
     struct Program *p;
@@ -103,6 +115,11 @@ static void test_3xp2(int const loops) {
     }
 }
 
+// Same as 3xp2, but sized to make sure it runs only body and no head.
+//
+// As a benchmark it's best compared to 3xp2.  Though this does a little more
+// work, it should run considerably faster, as N=12 needs just 3 body loops
+// instead of N=11 3 head loops and 2 body loops.
 static void test_all_body(int const loops) {
     size_t const sz = builder_size(6);
     struct Program *p;
@@ -117,7 +134,7 @@ static void test_all_body(int const loops) {
         p = done(b);
     }
 
-    float buf[] = {1,2,3,4,5,6,7,8},
+    float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
 
     for (int i = 0; i < loops; i++) {
@@ -130,6 +147,7 @@ static void test_all_body(int const loops) {
     }
 }
 
+// A regression test for a bug when N>1 && N%K==1.
 static void test_one_head(int const loops) {
     size_t const sz = builder_size(6);
     struct Program *p;
@@ -157,6 +175,7 @@ static void test_one_head(int const loops) {
     }
 }
 
+// A regression test for a bug when N==1.
 static void test_just_one(int const loops) {
     size_t const sz = builder_size(6);
     struct Program *p;
@@ -187,6 +206,9 @@ static void test_just_one(int const loops) {
 
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
+// I typically benchmark with hyperfine, something like
+//    $ hyperfine -N -w 3 -L bench build,reuse,fixed "therd_test 1000000 {bench}"
+// Using 1,000,000 loops like this lets you squint and read its ms results as ns/loop.
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "3xp2";
