@@ -207,6 +207,17 @@ static void test_just_one(int const loops) {
     }
 }
 
+static void write_hdr(float const *R, float const *G, float const *B, int w, int h) {
+    struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
+    for (int i = 0; i < w*h; i++) {
+        rgb[i].r = R[i];
+        rgb[i].g = G[i];
+        rgb[i].b = B[i];
+    }
+    stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
+    free(rgb);
+}
+
 static void test_demo(int const mode, int const loops) {
     void* buf[128];
     struct Program *p;
@@ -260,16 +271,8 @@ static void test_demo(int const mode, int const loops) {
             run(p, w, (void*[]){R+row,G+row,B+row, &Y,&InvW,&InvH});
         }
     }
-
     if (loops == 1) {
-        struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
-        for (int i = 0; i < w*h; i++) {
-            rgb[i].r = R[i];
-            rgb[i].g = G[i];
-            rgb[i].b = B[i];
-        }
-        stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
-        free(rgb);
+        write_hdr(R,G,B, w,h);
     }
 
     free(R);
@@ -278,6 +281,40 @@ static void test_demo(int const mode, int const loops) {
 }
 static void test_demo0(int const loops) { test_demo(0,loops); }
 static void test_demo1(int const loops) { test_demo(1,loops); }
+
+static void test_baked(int const loops) {
+    int const w = 319,
+              h = 240;
+
+    float * const R = calloc((size_t)(w*h), sizeof *R),
+          * const G = calloc((size_t)(w*h), sizeof *G),
+          * const B = calloc((size_t)(w*h), sizeof *B);
+
+    for (int i = 0; i < loops; i++) {
+        for (int y = 0; y < h; y++) {
+            void *buf[128];
+            struct Builder *b = builder(buf, sizeof buf);
+            id   (b);
+            imm  (b, 1/(float)w);
+            imm  (b, 0.5f);
+            imm  (b, (float)y * (1/(float)h));
+            store(b, 2);
+            store(b, 1);
+            mul  (b);
+            store(b, 0);
+
+            int const row = w*y;
+            run(done(b), w, (void*[]){R+row,G+row,B+row});
+        }
+    }
+    if (loops == 1) {
+        write_hdr(R,G,B, w,h);
+    }
+
+    free(R);
+    free(G);
+    free(B);
+}
 
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
@@ -300,5 +337,6 @@ int main(int argc, char* argv[]) {
 
     test(demo0);
     test(demo1);
+    test(baked);
     return 0;
 }
