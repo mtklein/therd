@@ -248,41 +248,6 @@ static void test_demo(int const mode, int const loops) {
 static void test_demo0(int const loops) { test_demo(0,loops); }
 static void test_demo1(int const loops) { test_demo(1,loops); }
 
-static void test_baked(int const loops) {
-    int const w = 319,
-              h = 240;
-
-    float * const R = calloc((size_t)(w*h), sizeof *R),
-          * const G = calloc((size_t)(w*h), sizeof *G),
-          * const B = calloc((size_t)(w*h), sizeof *B);
-
-    for (int i = 0; i < loops; i++) {
-        for (int y = 0; y < h; y++) {
-            void *buf[128];
-            struct program *p = program(buf, sizeof buf);
-            id   (p);
-            imm  (p, 1/(float)w);
-            imm  (p, 0.5f);
-            imm  (p, (float)y * (1/(float)h));
-            store(p, 2);
-            store(p, 1);
-            mul  (p);
-            store(p, 0);
-            done (p);
-
-            int const row = w*y;
-            execute(p, w, (void*[]){R+row,G+row,B+row});
-        }
-    }
-    if (loops == 1) {
-        write_hdr(R,G,B, w,h);
-    }
-
-    free(R);
-    free(G);
-    free(B);
-}
-
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
@@ -301,6 +266,5 @@ int main(int argc, char* argv[]) {
 
     test(demo0);
     test(demo1);
-    test(baked);
     return 0;
 }
