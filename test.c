@@ -103,7 +103,8 @@ static void test_3xp2(int const loops) {
     }
 }
 
-static void test_bug_N_mod_K_eq_0(int const loops) {
+// Regression test for a bug when n%K == 0.
+static void test_all_body(int const loops) {
     size_t const sz = program_size(7);
     struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
@@ -127,7 +128,8 @@ static void test_bug_N_mod_K_eq_0(int const loops) {
     }
 }
 
-static void test_bug_N_gt_1_and_N_mod_K_eq_1(int const loops) {
+// Regression test for a bug when n>1 && n%K == 1.
+static void test_one_head(int const loops) {
     size_t const sz = program_size(7);
     struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
@@ -151,7 +153,8 @@ static void test_bug_N_gt_1_and_N_mod_K_eq_1(int const loops) {
     }
 }
 
-static void test_bug_N_eq_1(int const loops) {
+// Regression test for a bug when n == 1.
+static void test_just_one(int const loops) {
     size_t const sz = program_size(7);
     struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
@@ -292,9 +295,9 @@ int main(int argc, char* argv[]) {
     test(noop);
     test(3xp2);
 
-    test(bug_N_mod_K_eq_0);
-    test(bug_N_gt_1_and_N_mod_K_eq_1);
-    test(bug_N_eq_1);
+    test(all_body);
+    test(one_head);
+    test(just_one);
 
     test(demo0);
     test(demo1);
