@@ -223,7 +223,7 @@ static void test_demo(int const mode, int const loops) {
     struct Program *p;
     {
         struct Builder *b = builder(buf, sizeof buf);
-        enum {R,G,B, Y,InvW,InvH};
+        enum {R,G,B, InvW,Y};
         if (mode == 0) {
             id   (b     );  // x
             uni  (b,InvW);  // x InvW
@@ -233,10 +233,8 @@ static void test_demo(int const mode, int const loops) {
             imm  (b,0.5f);  // 0.5
             store(b,   G);  //
 
-            uni  (b,   Y);  // Y
-            uni  (b,InvH);  // Y InvH
-            mul  (b     );  // Y*InvH
-            store(b,   B);  //
+            uni  (b,Y);     // Y
+            store(b,B);     //
         } else {
             // Pushing all the data onto the stack first gets better performance!
             // Probably due to better branch prediction, with more stage Fns used?
@@ -244,9 +242,7 @@ static void test_demo(int const mode, int const loops) {
             uni  (b,InvW);  // x InvW
             imm  (b,0.5f);  // x InvW 0.5
             uni  (b,   Y);  // x InvW 0.5 Y
-            uni  (b,InvH);  // x InvH 0.5 Y InvH
-                            //
-            mul  (b     );  // x InvH 0.5 Y*InvH
+
             store(b,   B);  // x InvH 0.5
             store(b,   G);  // x InvH
             mul  (b     );  // x*InvH
@@ -264,11 +260,10 @@ static void test_demo(int const mode, int const loops) {
 
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++) {
-            float Y =   (float)y,
-               InvW = 1/(float)w,
-               InvH = 1/(float)h;
+            float InvW =  1/(float)w,
+                     Y = (1/(float)h) * (float)y;
             int const row = w*y;
-            run(p, w, (void*[]){R+row,G+row,B+row, &Y,&InvW,&InvH});
+            run(p, w, (void*[]){R+row,G+row,B+row, &InvW,&Y});
         }
     }
     if (loops == 1) {
