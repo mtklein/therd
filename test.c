@@ -14,90 +14,60 @@ static _Bool equiv(float x, float y) {
 
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
-        size_t const sz = program_size(7);
-        struct program *p = program(malloc(sz), sz);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
-        done (p      );
-
-        free(p);
-    }
-}
-
-static void test_reuse(int const loops) {
-    size_t const sz = program_size(7);
-    void *buf = malloc(sz);
-    for (int i = 0; i < loops; i++) {
-        struct program *p = program(buf,sz);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
-        done (p      );
-    }
-    free(buf);
-}
-
-static void test_fixed(int const loops) {
-    void *buf[128];
-    want(sizeof buf >= program_size(7));
-    for (int i = 0; i < loops; i++) {
-        struct program *p = program(buf, sizeof buf);
-        imm  (p, 2.0f);
-        load (p,    0);
-        uni  (p,    2);
-        mul  (p      );
-        add  (p      );
-        store(p,    1);
-        done (p       );
+        struct inst p[7];
+        {
+            struct builder b = {.inst=p};
+            imm  (&b, 2.0f);
+            load (&b,    0);
+            uni  (&b,    2);
+            mul  (&b      );
+            add  (&b      );
+            store(&b,    1);
+            ret  (&b      );
+        }
     }
 }
 
 static void test_noop(int const loops) {
-    size_t const sz = program_size(1);
-    struct program *p = program(malloc(sz),sz);
-    done(p);
+    struct inst p;
+    {
+        struct builder b = {.inst=&p};
+        ret(&b);
+    }
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        execute(p, len(src), (void*[]){src,dst,&uni});
+        run(&p, len(src), (void*[]){src,dst,&uni});
     }
-    free(p);
 
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 0));
     }
 }
 
-static void test_3xp2(int const loops) {
-    size_t const sz = program_size(7);
-    struct program *p = program(malloc(sz),sz);
-    imm  (p, 2.0f);
-    load (p,    0);
-    uni  (p,    2);
-    mul  (p      );
-    add  (p      );
-    store(p,    1);
-    done (p      );
+static void build_3xp2(struct inst p[7]) {
+    struct builder b = {.inst=p};
+    imm  (&b, 2.0f);
+    load (&b,    0);
+    uni  (&b,    2);
+    mul  (&b      );
+    add  (&b      );
+    store(&b,    1);
+    ret  (&b      );
+}
 
+static void test_3xp2(int const loops) {
+    struct inst p[7];
+    build_3xp2(p);
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
           dst[len(src)] = {0};
-
     for (int i = 0; i < loops; i++) {
-        execute(p, len(src), (void*[]){src,dst,&uni});
+        run(p, len(src), (void*[]){src,dst,&uni});
     }
-    free(p);
-
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 3*src[i] + 2));
     }
@@ -105,24 +75,13 @@ static void test_3xp2(int const loops) {
 
 // Regression test for a bug when n%K == 0.
 static void test_all_body(int const loops) {
-    size_t const sz = program_size(7);
-    struct program *p = program(malloc(sz),sz);
-    imm  (p, 2.0f);
-    load (p,    0);
-    uni  (p,    1);
-    mul  (p      );
-    add  (p      );
-    store(p,    0);
-    done (p      );
-
+    struct inst p[7];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
-
     for (int i = 0; i < loops; i++) {
-        execute(p, len(buf), (void*[]){buf,&uni});
+        run(p, len(buf), (void*[]){buf,buf,&uni});
     }
-    free(p);
-
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
     }
@@ -130,24 +89,13 @@ static void test_all_body(int const loops) {
 
 // Regression test for a bug when n>1 && n%K == 1.
 static void test_one_head(int const loops) {
-    size_t const sz = program_size(7);
-    struct program *p = program(malloc(sz),sz);
-    imm  (p, 2.0f);
-    load (p,    0);
-    uni  (p,    1);
-    mul  (p      );
-    add  (p      );
-    store(p,    0);
-    done (p      );
-
+    struct inst p[7];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
-
     for (int i = 0; i < loops; i++) {
-        execute(p, len(buf), (void*[]){buf,&uni});
+        run(p, len(buf), (void*[]){buf,buf,&uni});
     }
-    free(p);
-
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
     }
@@ -155,24 +103,13 @@ static void test_one_head(int const loops) {
 
 // Regression test for a bug when n == 1.
 static void test_just_one(int const loops) {
-    size_t const sz = program_size(7);
-    struct program *p = program(malloc(sz),sz);
-    imm  (p, 2.0f);
-    load (p,    0);
-    uni  (p,    1);
-    mul  (p      );
-    add  (p      );
-    store(p,    0);
-    done (p      );
-
+    struct inst p[7];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
-
     for (int i = 0; i < loops; i++) {
-        execute(p, 1, (void*[]){buf,&uni});
+        run(p, 1, (void*[]){buf,buf,&uni});
     }
-    free(p);
-
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], i == 0 ? 3*(float)(i+1) + 2
                                   :   (float)(i+1)    ));
@@ -191,35 +128,31 @@ static void write_hdr(float const *R, float const *G, float const *B, int w, int
 }
 
 static void test_demo(int const mode, int const loops) {
-    void* buf[128];
-    struct program *p = program(buf, sizeof buf);
+    struct inst p[9];
+    struct builder b = {.inst=p};
     {
-        enum {R,G,B, InvW,Y};
+        enum {R,G,B, InvW,YInvH};
         if (mode == 0) {
-            id   (p     );  // x
-            uni  (p,InvW);  // x InvW
-            mul  (p     );  // x*InvW
-            store(p,   R);  //
-
-            imm  (p,0.5f);  // 0.5
-            store(p,   G);  //
-
-            uni  (p,Y);     // Y
-            store(p,B);     //
+            id   (&b       );  // x
+            uni  (&b,  InvW);  // x InvW
+            mul  (&b       );  // x*InvW
+            store(&b,     R);  //
+            imm  (&b,  0.5f);  // 0.5
+            store(&b,     G);  //
+            uni  (&b, YInvH);  // YInvH
+            store(&b,     B);  //
         } else {
-            // Pushing all the data onto the stack first gets better performance!
-            // Probably due to better branch prediction, with more stage Fns used?
-            id   (p     );  // x
-            uni  (p,InvW);  // x InvW
-            imm  (p,0.5f);  // x InvW 0.5
-            uni  (p,   Y);  // x InvW 0.5 Y
-
-            store(p,   B);  // x InvH 0.5
-            store(p,   G);  // x InvH
-            mul  (p     );  // x*InvH
-            store(p,   R);  //
+            // Faster!  Probably due to better branch prediction, functions at different depths?
+            id   (&b       );  // x
+            uni  (&b,  InvW);  // x InvW
+            imm  (&b,  0.5f);  // x InvW 0.5
+            uni  (&b, YInvH);  // x InvW 0.5 YInvH
+            store(&b,     B);  // x InvH 0.5
+            store(&b,     G);  // x InvH
+            mul  (&b       );  // x*InvH
+            store(&b,     R);  //
         }
-        done(p);
+        ret(&b);
     }
 
     int const w = 319,
@@ -231,10 +164,10 @@ static void test_demo(int const mode, int const loops) {
 
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++) {
-            float InvW =  1/(float)w,
-                     Y = (1/(float)h) * (float)y;
+            float InvW =            (1/(float)w),
+                 YInvH = (float)y * (1/(float)h);
             int const row = w*y;
-            execute(p, w, (void*[]){R+row,G+row,B+row, &InvW,&Y});
+            run(p, w, (void*[]){R+row,G+row,B+row, &InvW,&YInvH});
         }
     }
     if (loops == 1) {
@@ -254,12 +187,9 @@ int main(int argc, char* argv[]) {
     char const *bench = argc > 2 ?      argv[2]  : "demo0";
 
     test(build);
-    test(reuse);
-    test(fixed);
 
     test(noop);
     test(3xp2);
-
     test(all_body);
     test(one_head);
     test(just_one);
