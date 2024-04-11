@@ -83,5 +83,7 @@ void   uni(struct Builder*, int ptr);  // Push a uniform loaded from a float*.
 
 void imm(struct Builder*, float imm);  // Push an immediate onto the stack.
 
+void id(struct Builder*);              // Push varying program instance ID.
+
 void mul(struct Builder*);  // Pop top two values, multiply them, push result.
 void add(struct Builder*);  //      "                    add           "

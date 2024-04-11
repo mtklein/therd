@@ -284,6 +284,21 @@ void imm(struct Builder *b, float imm) {
     append(b,+1,inst,inst);
 }
 
+defn(id_0) { v0 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_1) { v1 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_2) { v2 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_3) { v3 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_4) { v4 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_5) { v5 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_6) { v6 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+defn(id_7) { v7 = splat(F, (float)i) + (F){0,1,2,3}; next; }
+
+void id(struct Builder *b) {
+    static Fn *fn[9] = {id_0,id_1,id_2,id_3,id_4,id_5,id_6,id_7,0};
+    struct Inst inst = {.fn=fn[b->depth] };
+    append(b,+1,inst,inst);
+}
+
 // The functions run(), head_loop() and body_loop() together are the control flow for our Program.
 void run(struct Program const *p, int N, void* ptr[]) {
     if (N > 0) {

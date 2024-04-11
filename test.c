@@ -1,3 +1,4 @@
+#include "stb/stb_image_write.h"
 #include "therd.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,6 +207,62 @@ static void test_just_one(int const loops) {
     }
 }
 
+static void test_demo(int const loops) {
+    void* buf[128];
+    struct Program *p;
+    {
+        struct Builder *b = builder(buf, sizeof buf);
+        enum {R,G,B, Y,InvW,InvH};
+
+        id   (b     );
+        uni  (b,InvW);
+        mul  (b     );
+        store(b,   R);
+
+        imm  (b,0.5f);
+        store(b,   G);
+
+        uni  (b,   Y);
+        uni  (b,InvH);
+        mul  (b     );
+        store(b,   B);
+
+        p = done(b);
+    }
+
+    int const w = 319,
+              h = 240;
+
+    float * const R = calloc((size_t)(w*h), sizeof *R),
+          * const G = calloc((size_t)(w*h), sizeof *G),
+          * const B = calloc((size_t)(w*h), sizeof *B);
+
+    for (int i = 0; i < loops; i++) {
+        for (int y = 0; y < h; y++) {
+            float Y =   (float)y,
+               InvW = 1/(float)w,
+               InvH = 1/(float)h;
+            int const row = w*y;
+            run(p, w, (void*[]){R+row,G+row,B+row, &Y,&InvW,&InvH});
+        }
+    }
+
+    if (loops == 1) {
+        struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
+        for (int i = 0; i < w*h; i++) {
+            rgb[i].r = R[i];
+            rgb[i].g = G[i];
+            rgb[i].b = B[i];
+        }
+        stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
+        free(rgb);
+    }
+
+    free(R);
+    free(G);
+    free(B);
+}
+
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
 // I typically benchmark with hyperfine, something like
@@ -213,7 +270,7 @@ static void test_just_one(int const loops) {
 // Using 1,000,000 loops like this lets you squint and read its ms results as ns/loop.
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
-    char const *bench = argc > 2 ?      argv[2]  : "3xp2";
+    char const *bench = argc > 2 ?      argv[2]  : "demo";
 
     test(build);
     test(reuse);
@@ -225,5 +282,6 @@ int main(int argc, char* argv[]) {
     test(one_head);
     test(just_one);
 
+    test(demo);
     return 0;
 }
