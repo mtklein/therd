@@ -207,26 +207,40 @@ static void test_just_one(int const loops) {
     }
 }
 
-static void test_demo(int const loops) {
+static void test_demo(int const mode, int const loops) {
     void* buf[128];
     struct Program *p;
     {
         struct Builder *b = builder(buf, sizeof buf);
         enum {R,G,B, Y,InvW,InvH};
+        if (mode == 0) {
+            id   (b     );  // x
+            uni  (b,InvW);  // x InvW
+            mul  (b     );  // x*InvW
+            store(b,   R);  //
 
-        id   (b     );
-        uni  (b,InvW);
-        mul  (b     );
-        store(b,   R);
+            imm  (b,0.5f);  // 0.5
+            store(b,   G);  //
 
-        imm  (b,0.5f);
-        store(b,   G);
-
-        uni  (b,   Y);
-        uni  (b,InvH);
-        mul  (b     );
-        store(b,   B);
-
+            uni  (b,   Y);  // Y
+            uni  (b,InvH);  // Y InvH
+            mul  (b     );  // Y*InvH
+            store(b,   B);  //
+        } else {
+            // Pushing all the data onto the stack first gets better performance!
+            // Probably due to better branch prediction, with more stage Fns used?
+            id   (b     );  // x
+            uni  (b,InvW);  // x InvW
+            imm  (b,0.5f);  // x InvW 0.5
+            uni  (b,   Y);  // x InvW 0.5 Y
+            uni  (b,InvH);  // x InvH 0.5 Y InvH
+                            //
+            mul  (b     );  // x InvH 0.5 Y*InvH
+            store(b,   B);  // x InvH 0.5
+            store(b,   G);  // x InvH
+            mul  (b     );  // x*InvH
+            store(b,   R);  //
+        }
         p = done(b);
     }
 
@@ -262,6 +276,8 @@ static void test_demo(int const loops) {
     free(G);
     free(B);
 }
+static void test_demo0(int const loops) { test_demo(0,loops); }
+static void test_demo1(int const loops) { test_demo(1,loops); }
 
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
@@ -270,7 +286,7 @@ static void test_demo(int const loops) {
 // Using 1,000,000 loops like this lets you squint and read its ms results as ns/loop.
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
-    char const *bench = argc > 2 ?      argv[2]  : "demo";
+    char const *bench = argc > 2 ?      argv[2]  : "demo0";
 
     test(build);
     test(reuse);
@@ -282,6 +298,7 @@ int main(int argc, char* argv[]) {
     test(one_head);
     test(just_one);
 
-    test(demo);
+    test(demo0);
+    test(demo1);
     return 0;
 }
