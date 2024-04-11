@@ -209,7 +209,7 @@ static void test_just_one(int const loops) {
 #define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
 
 // I typically benchmark with hyperfine, something like
-//    $ hyperfine -N -w 3 -L bench build,reuse,fixed "therd_test 1000000 {bench}"
+//    $ hyperfine -N -w 3 -L bench build,reuse,fixed "test 1000000 {bench}"
 // Using 1,000,000 loops like this lets you squint and read its ms results as ns/loop.
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
