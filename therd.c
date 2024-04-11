@@ -140,7 +140,7 @@ defn(mul_7) { v5 *= v6; next; }
 defn(mul_8) { v6 *= v7; next; }  // stack depth 8->7, top of stack v7->v6
 
 void mul(struct Builder *b) {
-    static Fn *fn[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
+    Fn *fn[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
     struct Inst inst = { .fn=fn[b->depth] };
     append(b,-1,inst,inst);
 }
@@ -165,19 +165,19 @@ defn(mad_7) { v4 += v5*v6; next; }
 defn(mad_8) { v5 += v6*v7; next; }  // depth 8->6, top v7->v5
 
 void add(struct Builder *b) {
-    static Fn *mul[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
+    Fn *mul[9] = {0,0,mul_2,mul_3,mul_4,mul_5,mul_6,mul_7,mul_8};
     int const mul_delta = -1;
     if (b->head[b->last].fn == mul[b->depth - mul_delta]) {  // if the last instruction was a mul...
         rewind(b, mul_delta);                                // ... rewind it
 
-        static Fn *mad[9] = {0,0,0,mad_3,mad_4,mad_5,mad_6,mad_7,mad_8};
+        Fn *mad[9] = {0,0,0,mad_3,mad_4,mad_5,mad_6,mad_7,mad_8};
         struct Inst inst = { .fn=mad[b->depth] };
         append(b,-2,inst,inst);                              // ... and replace with a fused mul-add
         return;
     }
 
     // Not fusing with a previous mul, just append a normal add.
-    static Fn *fn[9] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8};
+    Fn *fn[9] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8};
     struct Inst inst = { .fn=fn[b->depth] };
     append(b,-1,inst,inst);
 }
@@ -214,10 +214,10 @@ defn(body_store_7) { float *dst = ptr[ip->ix]; *(F*)(dst+i) = v6; next; }
 defn(body_store_8) { float *dst = ptr[ip->ix]; *(F*)(dst+i) = v7; next; }
 
 void store(struct Builder *b, int ix) {
-    static Fn *head_fn[9] = {0, head_store_1, head_store_2, head_store_3, head_store_4
-                              , head_store_5, head_store_6, head_store_7, head_store_8},
-              *body_fn[9] = {0, body_store_1, body_store_2, body_store_3, body_store_4
-                              , body_store_5, body_store_6, body_store_7, body_store_8};
+    Fn *head_fn[9] = {0, head_store_1, head_store_2, head_store_3, head_store_4
+                       , head_store_5, head_store_6, head_store_7, head_store_8},
+       *body_fn[9] = {0, body_store_1, body_store_2, body_store_3, body_store_4
+                       , body_store_5, body_store_6, body_store_7, body_store_8};
     append(b,-1, (struct Inst){.fn=head_fn[b->depth], .ix=ix}
                , (struct Inst){.fn=body_fn[b->depth], .ix=ix});
 }
@@ -241,10 +241,10 @@ defn(body_load_6) { float const *src = ptr[ip->ix]; v6 = *(F const*)(src+i); nex
 defn(body_load_7) { float const *src = ptr[ip->ix]; v7 = *(F const*)(src+i); next; }
 
 void load(struct Builder *b, int ix) {
-    static Fn *head_fn[9] = {head_load_0, head_load_1, head_load_2, head_load_3,
-                             head_load_4, head_load_5, head_load_6, head_load_7, 0},
-              *body_fn[9] = {body_load_0, body_load_1, body_load_2, body_load_3,
-                             body_load_4, body_load_5, body_load_6, body_load_7, 0};
+    Fn *head_fn[9] = {head_load_0, head_load_1, head_load_2, head_load_3,
+                      head_load_4, head_load_5, head_load_6, head_load_7, 0},
+       *body_fn[9] = {body_load_0, body_load_1, body_load_2, body_load_3,
+                      body_load_4, body_load_5, body_load_6, body_load_7, 0};
     append(b,+1, (struct Inst){.fn=head_fn[b->depth], .ix=ix}
                , (struct Inst){.fn=body_fn[b->depth], .ix=ix});
 }
@@ -264,7 +264,7 @@ defn(uni_6) { float const *uni = ptr[ip->ix]; v6 = splat(F, *uni); next; }
 defn(uni_7) { float const *uni = ptr[ip->ix]; v7 = splat(F, *uni); next; }
 
 void uni(struct Builder *b, int ix) {
-    static Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
+    Fn *fn[9] = {uni_0,uni_1,uni_2,uni_3,uni_4,uni_5,uni_6,uni_7,0};
     struct Inst inst = {.fn=fn[b->depth], .ix=ix};
     append(b,+1,inst,inst);
 }
@@ -279,7 +279,7 @@ defn(imm_6) { v6 = splat(F, ip->imm); next; }
 defn(imm_7) { v7 = splat(F, ip->imm); next; }
 
 void imm(struct Builder *b, float imm) {
-    static Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
+    Fn *fn[9] = {imm_0,imm_1,imm_2,imm_3,imm_4,imm_5,imm_6,imm_7,0};
     struct Inst inst = {.fn=fn[b->depth], .imm=imm};
     append(b,+1,inst,inst);
 }
@@ -294,7 +294,7 @@ defn(id_6) { v6 = splat(F, (float)i) + (F){0,1,2,3}; next; }
 defn(id_7) { v7 = splat(F, (float)i) + (F){0,1,2,3}; next; }
 
 void id(struct Builder *b) {
-    static Fn *fn[9] = {id_0,id_1,id_2,id_3,id_4,id_5,id_6,id_7,0};
+    Fn *fn[9] = {id_0,id_1,id_2,id_3,id_4,id_5,id_6,id_7,0};
     struct Inst inst = {.fn=fn[b->depth] };
     append(b,+1,inst,inst);
 }
