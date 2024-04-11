@@ -1,7 +1,8 @@
 #include "therd.h"
 
 #define K 4
-#define vec(T) T __attribute__(( vector_size(K * sizeof(T)), aligned(sizeof(T)) ))
+#define vec(T)     T __attribute__(( vector_size(K * sizeof(T)), aligned(sizeof(T)) ))
+#define splat(T,v) (((T){0} + 1) * (v))
 
 struct inst;
 typedef vec(float) F;
@@ -144,8 +145,6 @@ void load(struct program *p, int ix) {
                , (struct inst){.fn=body_fn[p->depth], .ix=ix});
 }
 
-#define splat(T,v) (((T){0} + 1) * (v))
-
 defn(uni_0) { float const *uni = ptr[ip->ix]; v0 = splat(F, *uni); next; }
 defn(uni_1) { float const *uni = ptr[ip->ix]; v1 = splat(F, *uni); next; }
 defn(uni_2) { float const *uni = ptr[ip->ix]; v2 = splat(F, *uni); next; }
@@ -191,15 +190,6 @@ void id(struct program *p) {
     append(p,+1,inst,inst);
 }
 
-void execute(struct program const *p, int n, void* ptr[]) {
-    if (n > 0) {
-        struct inst const *start = n%K ? p->head
-                                       : p->body;
-        F z = {0};
-        start->fn(start,0,n,ptr, z,z,z,z, z,z,z,z);
-    }
-}
-
 static void head_loop(struct inst const *ip, int i, int n, void* ptr[],
                       F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7) {
     i += 1;
@@ -223,4 +213,13 @@ static void body_loop(struct inst const *ip, int i, int n, void* ptr[],
 void done(struct program *p) {
     append(p, 0, (struct inst){.fn=head_loop, .ptr=p}
                , (struct inst){.fn=body_loop, .ptr=p->body});
+}
+
+void execute(struct program const *p, int n, void* ptr[]) {
+    if (n > 0) {
+        struct inst const *start = n%K ? p->head
+                                       : p->body;
+        F z = {0};
+        start->fn(start,0,n,ptr, z,z,z,z, z,z,z,z);
+    }
 }
