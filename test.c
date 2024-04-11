@@ -15,7 +15,7 @@ static _Bool equiv(float x, float y) {
 static void test_build(int const loops) {
     for (int i = 0; i < loops; i++) {
         size_t const sz = program_size(7);
-        struct Program *p = program(malloc(sz), sz);
+        struct program *p = program(malloc(sz), sz);
         imm  (p, 2.0f);
         load (p,    0);
         uni  (p,    2);
@@ -32,7 +32,7 @@ static void test_reuse(int const loops) {
     size_t const sz = program_size(7);
     void *buf = malloc(sz);
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(buf,sz);
+        struct program *p = program(buf,sz);
         imm  (p, 2.0f);
         load (p,    0);
         uni  (p,    2);
@@ -48,7 +48,7 @@ static void test_fixed(int const loops) {
     void *buf[128];
     want(sizeof buf >= program_size(7));
     for (int i = 0; i < loops; i++) {
-        struct Program *p = program(buf, sizeof buf);
+        struct program *p = program(buf, sizeof buf);
         imm  (p, 2.0f);
         load (p,    0);
         uni  (p,    2);
@@ -61,7 +61,7 @@ static void test_fixed(int const loops) {
 
 static void test_noop(int const loops) {
     size_t const sz = program_size(1);
-    struct Program *p = program(malloc(sz),sz);
+    struct program *p = program(malloc(sz),sz);
     done(p);
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
@@ -69,7 +69,7 @@ static void test_noop(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        run(p, len(src), (void*[]){src,dst,&uni});
+        execute(p, len(src), (void*[]){src,dst,&uni});
     }
     free(p);
 
@@ -80,7 +80,7 @@ static void test_noop(int const loops) {
 
 static void test_3xp2(int const loops) {
     size_t const sz = program_size(7);
-    struct Program *p = program(malloc(sz),sz);
+    struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
     load (p,    0);
     uni  (p,    2);
@@ -94,7 +94,7 @@ static void test_3xp2(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        run(p, len(src), (void*[]){src,dst,&uni});
+        execute(p, len(src), (void*[]){src,dst,&uni});
     }
     free(p);
 
@@ -105,7 +105,7 @@ static void test_3xp2(int const loops) {
 
 static void test_bug_N_mod_K_eq_0(int const loops) {
     size_t const sz = program_size(7);
-    struct Program *p = program(malloc(sz),sz);
+    struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
     load (p,    0);
     uni  (p,    1);
@@ -118,7 +118,7 @@ static void test_bug_N_mod_K_eq_0(int const loops) {
           uni   = 3.0f;
 
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), (void*[]){buf,&uni});
+        execute(p, len(buf), (void*[]){buf,&uni});
     }
     free(p);
 
@@ -129,7 +129,7 @@ static void test_bug_N_mod_K_eq_0(int const loops) {
 
 static void test_bug_N_gt_1_and_N_mod_K_eq_1(int const loops) {
     size_t const sz = program_size(7);
-    struct Program *p = program(malloc(sz),sz);
+    struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
     load (p,    0);
     uni  (p,    1);
@@ -142,7 +142,7 @@ static void test_bug_N_gt_1_and_N_mod_K_eq_1(int const loops) {
           uni   = 3.0f;
 
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), (void*[]){buf,&uni});
+        execute(p, len(buf), (void*[]){buf,&uni});
     }
     free(p);
 
@@ -153,7 +153,7 @@ static void test_bug_N_gt_1_and_N_mod_K_eq_1(int const loops) {
 
 static void test_bug_N_eq_1(int const loops) {
     size_t const sz = program_size(7);
-    struct Program *p = program(malloc(sz),sz);
+    struct program *p = program(malloc(sz),sz);
     imm  (p, 2.0f);
     load (p,    0);
     uni  (p,    1);
@@ -166,7 +166,7 @@ static void test_bug_N_eq_1(int const loops) {
           uni   = 3.0f;
 
     for (int i = 0; i < loops; i++) {
-        run(p, 1, (void*[]){buf,&uni});
+        execute(p, 1, (void*[]){buf,&uni});
     }
     free(p);
 
@@ -189,7 +189,7 @@ static void write_hdr(float const *R, float const *G, float const *B, int w, int
 
 static void test_demo(int const mode, int const loops) {
     void* buf[128];
-    struct Program *p = program(buf, sizeof buf);
+    struct program *p = program(buf, sizeof buf);
     {
         enum {R,G,B, InvW,Y};
         if (mode == 0) {
@@ -231,7 +231,7 @@ static void test_demo(int const mode, int const loops) {
             float InvW =  1/(float)w,
                      Y = (1/(float)h) * (float)y;
             int const row = w*y;
-            run(p, w, (void*[]){R+row,G+row,B+row, &InvW,&Y});
+            execute(p, w, (void*[]){R+row,G+row,B+row, &InvW,&Y});
         }
     }
     if (loops == 1) {
@@ -256,7 +256,7 @@ static void test_baked(int const loops) {
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++) {
             void *buf[128];
-            struct Program *p = program(buf, sizeof buf);
+            struct program *p = program(buf, sizeof buf);
             id   (p);
             imm  (p, 1/(float)w);
             imm  (p, 0.5f);
@@ -268,7 +268,7 @@ static void test_baked(int const loops) {
             done (p);
 
             int const row = w*y;
-            run(p, w, (void*[]){R+row,G+row,B+row});
+            execute(p, w, (void*[]){R+row,G+row,B+row});
         }
     }
     if (loops == 1) {
