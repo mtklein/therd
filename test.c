@@ -13,17 +13,15 @@ static _Bool equiv(float x, float y) {
 }
 
 static void test_build(int const loops) {
+    struct inst p[7];
     for (int i = 0; i < loops; i++) {
-        struct inst p[7];
-        {
-            struct builder b = {.inst=p};
-            b = imm  (b, 2.0f);
-            b = load (b,    0);
-            b = uni  (b,    2);
-            b = mul  (b      );
-            b = add  (b      );
-            ret(store(b,    1));
-        }
+        struct builder b = {.inst=p};
+        b = imm  (b, 2.0f);
+        b = load (b,    0);
+        b = uni  (b,    2);
+        b = mul  (b      );
+        b = add  (b      );
+        ret(store(b,    1));
     }
 }
 
@@ -127,8 +125,8 @@ static void write_hdr(float const *R, float const *G, float const *B, int w, int
 
 static void test_demo(int const mode, int const loops) {
     struct inst p[9];
-    struct builder b = {.inst=p};
     {
+        struct builder b = {.inst=p};
         enum {R,G,B, InvW,YInvH};
         if (mode == 0) {
             b = id   (b       );  // x
