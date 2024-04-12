@@ -8,16 +8,16 @@ struct inst {
 };
 
 struct builder {
-    struct inst * const inst;
-    int                 insts,depth;
+    struct inst * inst;
+    int           insts,depth;
 };
-void store(struct builder*, int ptr);
-void  load(struct builder*, int ptr);
-void   uni(struct builder*, int ptr);
-void   imm(struct builder*,  float );
-void    id(struct builder*         );
-void   mul(struct builder*         );
-void   add(struct builder*         );
-void   ret(struct builder*         );
+struct builder store(struct builder, int ptr);
+struct builder  load(struct builder, int ptr);
+struct builder   uni(struct builder, int ptr);
+struct builder   imm(struct builder,  float );
+struct builder    id(struct builder         );
+struct builder   mul(struct builder         );
+struct builder   add(struct builder         );
+void             ret(struct builder         );
 
 void run(struct inst const*, int n, void* ptr[]);

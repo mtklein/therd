@@ -17,13 +17,12 @@ static void test_build(int const loops) {
         struct inst p[7];
         {
             struct builder b = {.inst=p};
-            imm  (&b, 2.0f);
-            load (&b,    0);
-            uni  (&b,    2);
-            mul  (&b      );
-            add  (&b      );
-            store(&b,    1);
-            ret  (&b      );
+            b = imm  (b, 2.0f);
+            b = load (b,    0);
+            b = uni  (b,    2);
+            b = mul  (b      );
+            b = add  (b      );
+            ret(store(b,    1));
         }
     }
 }
@@ -32,7 +31,7 @@ static void test_noop(int const loops) {
     struct inst p;
     {
         struct builder b = {.inst=&p};
-        ret(&b);
+        ret(b);
     }
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
@@ -50,13 +49,12 @@ static void test_noop(int const loops) {
 
 static void build_3xp2(struct inst p[7]) {
     struct builder b = {.inst=p};
-    imm  (&b, 2.0f);
-    load (&b,    0);
-    uni  (&b,    2);
-    mul  (&b      );
-    add  (&b      );
-    store(&b,    1);
-    ret  (&b      );
+    b = imm  (b, 2.0f);
+    b = load (b,    0);
+    b = uni  (b,    2);
+    b = mul  (b      );
+    b = add  (b      );
+    ret(store(b,    1));
 }
 
 static void test_3xp2(int const loops) {
@@ -133,26 +131,26 @@ static void test_demo(int const mode, int const loops) {
     {
         enum {R,G,B, InvW,YInvH};
         if (mode == 0) {
-            id   (&b       );  // x
-            uni  (&b,  InvW);  // x InvW
-            mul  (&b       );  // x*InvW
-            store(&b,     R);  //
-            imm  (&b,  0.5f);  // 0.5
-            store(&b,     G);  //
-            uni  (&b, YInvH);  // YInvH
-            store(&b,     B);  //
+            b = id   (b       );  // x
+            b = uni  (b,  InvW);  // x InvW
+            b = mul  (b       );  // x*InvW
+            b = store(b,     R);  //
+            b = imm  (b,  0.5f);  // 0.5
+            b = store(b,     G);  //
+            b = uni  (b, YInvH);  // YInvH
+            b = store(b,     B);  //
         } else {
             // Faster!  Probably due to better branch prediction, functions at different depths?
-            id   (&b       );  // x
-            uni  (&b,  InvW);  // x InvW
-            imm  (&b,  0.5f);  // x InvW 0.5
-            uni  (&b, YInvH);  // x InvW 0.5 YInvH
-            store(&b,     B);  // x InvH 0.5
-            store(&b,     G);  // x InvH
-            mul  (&b       );  // x*InvH
-            store(&b,     R);  //
+            b = id   (b       );  // x
+            b = uni  (b,  InvW);  // x InvW
+            b = imm  (b,  0.5f);  // x InvW 0.5
+            b = uni  (b, YInvH);  // x InvW 0.5 YInvH
+            b = store(b,     B);  // x InvH 0.5
+            b = store(b,     G);  // x InvH
+            b = mul  (b       );  // x*InvH
+            b = store(b,     R);  //
         }
-        ret(&b);
+        ret(b);
     }
 
     int const w = 319,
