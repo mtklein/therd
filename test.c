@@ -179,7 +179,7 @@ static void test_demo(int const mode, int const loops) {
 static void test_demo0(int const loops) { test_demo(0,loops); }
 static void test_demo1(int const loops) { test_demo(1,loops); }
 
-#define test(fn) test_##fn(strcmp(bench, #fn) ? 1 : loops)
+#define test(fn) if (loops == 1 || 0 == strcmp(bench, #fn)) test_##fn(loops)
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "demo0";
