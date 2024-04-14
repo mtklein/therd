@@ -16,12 +16,12 @@ static void test_build(int const loops) {
     struct inst p[7];
     for (int i = 0; i < loops; i++) {
         struct builder b = {.inst=p};
-        b = imm  (b, 2.0f);
-        b = load (b,    0);
-        b = uni  (b,    2);
-        b = mul  (b      );
-        b = add  (b      );
-        ret(store(b,    1));
+        b = imm(b, 2.0f);
+        b = ld1(b,    0);
+        b = uni(b,    2);
+        b = mul(b      );
+        b = add(b      );
+        ret(st1(b,    1));
     }
 }
 
@@ -47,12 +47,12 @@ static void test_noop(int const loops) {
 
 static void build_3xp2(struct inst p[7]) {
     struct builder b = {.inst=p};
-    b = imm  (b, 2.0f);
-    b = load (b,    0);
-    b = uni  (b,    2);
-    b = mul  (b      );
-    b = add  (b      );
-    ret(store(b,    1));
+    b = imm(b, 2.0f);
+    b = ld1(b,    0);
+    b = uni(b,    2);
+    b = mul(b      );
+    b = add(b      );
+    ret(st1(b,    1));
 }
 
 static void test_3xp2(int const loops) {
@@ -129,24 +129,24 @@ static void test_demo(int const mode, int const loops) {
         struct builder b = {.inst=p};
         enum {R,G,B, InvW,YInvH};
         if (mode == 0) {
-            b = id   (b       );  // x
-            b = uni  (b,  InvW);  // x InvW
-            b = mul  (b       );  // x*InvW
-            b = store(b,     R);  //
-            b = imm  (b,  0.5f);  // 0.5
-            b = store(b,     G);  //
-            b = uni  (b, YInvH);  // YInvH
-            b = store(b,     B);  //
+            b = id (b       );  // x
+            b = uni(b,  InvW);  // x InvW
+            b = mul(b       );  // x*InvW
+            b = st1(b,     R);  //
+            b = imm(b,  0.5f);  // 0.5
+            b = st1(b,     G);  //
+            b = uni(b, YInvH);  // YInvH
+            b = st1(b,     B);  //
         } else {
             // Faster!  Probably due to better branch prediction, functions at different depths?
-            b = id   (b       );  // x
-            b = uni  (b,  InvW);  // x InvW
-            b = imm  (b,  0.5f);  // x InvW 0.5
-            b = uni  (b, YInvH);  // x InvW 0.5 YInvH
-            b = store(b,     B);  // x InvH 0.5
-            b = store(b,     G);  // x InvH
-            b = mul  (b       );  // x*InvH
-            b = store(b,     R);  //
+            b = id (b       );  // x
+            b = uni(b,  InvW);  // x InvW
+            b = imm(b,  0.5f);  // x InvW 0.5
+            b = uni(b, YInvH);  // x InvW 0.5 YInvH
+            b = st1(b,     B);  // x InvH 0.5
+            b = st1(b,     G);  // x InvH
+            b = mul(b       );  // x*InvH
+            b = st1(b,     R);  //
         }
         ret(b);
     }

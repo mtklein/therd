@@ -49,33 +49,33 @@ struct builder add(struct builder b) {
     return b;
 }
 
-defn(store_1) { float *p = ptr[ip->ix]; if (n%K) p[i] = v0[0]; else *(F*)(p+i) = v0; next; }
-defn(store_2) { float *p = ptr[ip->ix]; if (n%K) p[i] = v1[0]; else *(F*)(p+i) = v1; next; }
-defn(store_3) { float *p = ptr[ip->ix]; if (n%K) p[i] = v2[0]; else *(F*)(p+i) = v2; next; }
-defn(store_4) { float *p = ptr[ip->ix]; if (n%K) p[i] = v3[0]; else *(F*)(p+i) = v3; next; }
-defn(store_5) { float *p = ptr[ip->ix]; if (n%K) p[i] = v4[0]; else *(F*)(p+i) = v4; next; }
-defn(store_6) { float *p = ptr[ip->ix]; if (n%K) p[i] = v5[0]; else *(F*)(p+i) = v5; next; }
-defn(store_7) { float *p = ptr[ip->ix]; if (n%K) p[i] = v6[0]; else *(F*)(p+i) = v6; next; }
-defn(store_8) { float *p = ptr[ip->ix]; if (n%K) p[i] = v7[0]; else *(F*)(p+i) = v7; next; }
-static fn store_fn[9] = {0,store_1,store_2,store_3,store_4,store_5,store_6,store_7,store_8};
+defn(st1_1) { float *p = ptr[ip->ix]; if (n%K) p[i] = v0[0]; else *(F*)(p+i) = v0; next; }
+defn(st1_2) { float *p = ptr[ip->ix]; if (n%K) p[i] = v1[0]; else *(F*)(p+i) = v1; next; }
+defn(st1_3) { float *p = ptr[ip->ix]; if (n%K) p[i] = v2[0]; else *(F*)(p+i) = v2; next; }
+defn(st1_4) { float *p = ptr[ip->ix]; if (n%K) p[i] = v3[0]; else *(F*)(p+i) = v3; next; }
+defn(st1_5) { float *p = ptr[ip->ix]; if (n%K) p[i] = v4[0]; else *(F*)(p+i) = v4; next; }
+defn(st1_6) { float *p = ptr[ip->ix]; if (n%K) p[i] = v5[0]; else *(F*)(p+i) = v5; next; }
+defn(st1_7) { float *p = ptr[ip->ix]; if (n%K) p[i] = v6[0]; else *(F*)(p+i) = v6; next; }
+defn(st1_8) { float *p = ptr[ip->ix]; if (n%K) p[i] = v7[0]; else *(F*)(p+i) = v7; next; }
+static fn st1_fn[9] = {0,st1_1,st1_2,st1_3,st1_4,st1_5,st1_6,st1_7,st1_8};
 
-struct builder store(struct builder b, int ix) {
-    b.inst[b.insts++] = (struct inst){ .fn=store_fn[b.depth--], .ix=ix };
+struct builder st1(struct builder b, int ix) {
+    b.inst[b.insts++] = (struct inst){ .fn=st1_fn[b.depth--], .ix=ix };
     return b;
 }
 
-defn(load_0) { float *p = ptr[ip->ix]; if (n%K) v0[0] = p[i]; else v0 = *(F*)(p+i); next; }
-defn(load_1) { float *p = ptr[ip->ix]; if (n%K) v1[0] = p[i]; else v1 = *(F*)(p+i); next; }
-defn(load_2) { float *p = ptr[ip->ix]; if (n%K) v2[0] = p[i]; else v2 = *(F*)(p+i); next; }
-defn(load_3) { float *p = ptr[ip->ix]; if (n%K) v3[0] = p[i]; else v3 = *(F*)(p+i); next; }
-defn(load_4) { float *p = ptr[ip->ix]; if (n%K) v4[0] = p[i]; else v4 = *(F*)(p+i); next; }
-defn(load_5) { float *p = ptr[ip->ix]; if (n%K) v5[0] = p[i]; else v5 = *(F*)(p+i); next; }
-defn(load_6) { float *p = ptr[ip->ix]; if (n%K) v6[0] = p[i]; else v6 = *(F*)(p+i); next; }
-defn(load_7) { float *p = ptr[ip->ix]; if (n%K) v7[0] = p[i]; else v7 = *(F*)(p+i); next; }
-static fn load_fn[9] = {load_0,load_1,load_2,load_3,load_4,load_5,load_6,load_7,0};
+defn(ld1_0) { float *p = ptr[ip->ix]; if (n%K) v0[0] = p[i]; else v0 = *(F*)(p+i); next; }
+defn(ld1_1) { float *p = ptr[ip->ix]; if (n%K) v1[0] = p[i]; else v1 = *(F*)(p+i); next; }
+defn(ld1_2) { float *p = ptr[ip->ix]; if (n%K) v2[0] = p[i]; else v2 = *(F*)(p+i); next; }
+defn(ld1_3) { float *p = ptr[ip->ix]; if (n%K) v3[0] = p[i]; else v3 = *(F*)(p+i); next; }
+defn(ld1_4) { float *p = ptr[ip->ix]; if (n%K) v4[0] = p[i]; else v4 = *(F*)(p+i); next; }
+defn(ld1_5) { float *p = ptr[ip->ix]; if (n%K) v5[0] = p[i]; else v5 = *(F*)(p+i); next; }
+defn(ld1_6) { float *p = ptr[ip->ix]; if (n%K) v6[0] = p[i]; else v6 = *(F*)(p+i); next; }
+defn(ld1_7) { float *p = ptr[ip->ix]; if (n%K) v7[0] = p[i]; else v7 = *(F*)(p+i); next; }
+static fn ld1_fn[9] = {ld1_0,ld1_1,ld1_2,ld1_3,ld1_4,ld1_5,ld1_6,ld1_7,0};
 
-struct builder load(struct builder b, int ix) {
-    b.inst[b.insts++] = (struct inst){ .fn=load_fn[b.depth++], .ix=ix };
+struct builder ld1(struct builder b, int ix) {
+    b.inst[b.insts++] = (struct inst){ .fn=ld1_fn[b.depth++], .ix=ix };
     return b;
 }
 
