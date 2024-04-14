@@ -1,4 +1,8 @@
 #include "therd.h"
+#if 1 && defined(__ARM_NEON)
+    #include <arm_neon.h>
+    #define HAVE_NEON_INTRINSICS
+#endif
 
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
@@ -65,6 +69,10 @@ struct builder st1(struct builder b, int ix) {
 }
 
 static void st3_(float *p, int n, F x, F y, F z) {
+#if defined(HAVE_NEON_INTRINSICS)
+    float32x4x3_t const xyz = {{x,y,z}};
+    n%K ? vst3q_lane_f32(p,xyz,0) : vst3q_f32(p,xyz);
+#else
     if (n%K) {
         *p++ = x[0]; *p++ = y[0]; *p++ = z[0];
     } else {
@@ -73,6 +81,7 @@ static void st3_(float *p, int n, F x, F y, F z) {
         *p++ = x[2]; *p++ = y[2]; *p++ = z[2];
         *p++ = x[3]; *p++ = y[3]; *p++ = z[3];
     }
+#endif
 }
 defn(st3_3) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v0,v1,v2); next; }
 defn(st3_4) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v1,v2,v3); next; }
