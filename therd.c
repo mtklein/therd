@@ -64,6 +64,30 @@ struct builder st1(struct builder b, int ix) {
     return b;
 }
 
+static void st3_(float *p, int n, F x, F y, F z) {
+    if (n%K) {
+        *p++ = x[0]; *p++ = y[0]; *p++ = z[0];
+    } else {
+        *p++ = x[0]; *p++ = y[0]; *p++ = z[0];
+        *p++ = x[1]; *p++ = y[1]; *p++ = z[1];
+        *p++ = x[2]; *p++ = y[2]; *p++ = z[2];
+        *p++ = x[3]; *p++ = y[3]; *p++ = z[3];
+    }
+}
+defn(st3_3) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v0,v1,v2); next; }
+defn(st3_4) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v1,v2,v3); next; }
+defn(st3_5) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v2,v3,v4); next; }
+defn(st3_6) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v3,v4,v5); next; }
+defn(st3_7) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v4,v5,v6); next; }
+defn(st3_8) { float *p = ptr[ip->ix]; st3_(p+3*i, n, v5,v6,v7); next; }
+static fn st3_fn[9] = {0,0,0,st3_3,st3_4,st3_5,st3_6,st3_7,st3_8};
+
+struct builder st3(struct builder b, int ix) {
+    b.inst[b.insts++] = (struct inst){ .fn=st3_fn[b.depth], .ix=ix };
+    b.depth -= 3;
+    return b;
+}
+
 defn(ld1_0) { float *p = ptr[ip->ix]; if (n%K) v0[0] = p[i]; else v0 = *(F*)(p+i); next; }
 defn(ld1_1) { float *p = ptr[ip->ix]; if (n%K) v1[0] = p[i]; else v1 = *(F*)(p+i); next; }
 defn(ld1_2) { float *p = ptr[ip->ix]; if (n%K) v2[0] = p[i]; else v2 = *(F*)(p+i); next; }

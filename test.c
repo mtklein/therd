@@ -112,75 +112,43 @@ static void test_just_one(int const loops) {
     }
 }
 
-static void write_hdr(float const *R, float const *G, float const *B, int w, int h) {
-    struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
-    for (int i = 0; i < w*h; i++) {
-        rgb[i].r = R[i];
-        rgb[i].g = G[i];
-        rgb[i].b = B[i];
-    }
-    stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
-    free(rgb);
-}
-
-static void test_demo(int const mode, int const loops) {
+static void test_demo(int const loops) {
     struct inst p[9];
     {
         struct builder b = {.inst=p};
-        enum {R,G,B, InvW,YInvH};
-        if (mode == 0) {
-            b = id (b       );  // x
-            b = uni(b,  InvW);  // x InvW
-            b = mul(b       );  // x*InvW
-            b = st1(b,     R);  //
-            b = imm(b,  0.5f);  // 0.5
-            b = st1(b,     G);  //
-            b = uni(b, YInvH);  // YInvH
-            b = st1(b,     B);  //
-        } else {
-            // Faster!  Probably due to better branch prediction, functions at different depths?
-            b = id (b       );  // x
-            b = uni(b,  InvW);  // x InvW
-            b = imm(b,  0.5f);  // x InvW 0.5
-            b = uni(b, YInvH);  // x InvW 0.5 YInvH
-            b = st1(b,     B);  // x InvH 0.5
-            b = st1(b,     G);  // x InvH
-            b = mul(b       );  // x*InvH
-            b = st1(b,     R);  //
-        }
-        ret(b);
+        enum {rgb, inv_w, y_inv_h};
+
+        b = id (b         );  // x
+        b = uni(b,   inv_w);  // x inv_h
+        b = mul(b         );  // x*inv_h
+        b = imm(b,    0.5f);  // x*inv_h 0.5
+        b = uni(b, y_inv_h);  // x*inv_h 0.5 y_inv_h
+        ret(st3(b,     rgb));
     }
 
     int const w = 319,
               h = 240;
 
-    float * const R = calloc((size_t)(w*h), sizeof *R),
-          * const G = calloc((size_t)(w*h), sizeof *G),
-          * const B = calloc((size_t)(w*h), sizeof *B);
+    struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
 
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++) {
-            float InvW =            (1/(float)w),
-                 YInvH = (float)y * (1/(float)h);
-            int const row = w*y;
-            run(p, w, (void*[]){R+row,G+row,B+row, &InvW,&YInvH});
+            float inv_w =            (1/(float)w),
+                y_inv_h = (float)y * (1/(float)h);
+            run(p, w, (void*[]){rgb+w*y,&inv_w,&y_inv_h});
         }
     }
     if (loops == 1) {
-        write_hdr(R,G,B, w,h);
+        stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
     }
 
-    free(R);
-    free(G);
-    free(B);
+    free(rgb);
 }
-static void test_demo0(int const loops) { test_demo(0,loops); }
-static void test_demo1(int const loops) { test_demo(1,loops); }
 
 #define test(fn) if (loops == 1 || 0 == strcmp(bench, #fn)) test_##fn(loops)
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
-    char const *bench = argc > 2 ?      argv[2]  : "demo0";
+    char const *bench = argc > 2 ?      argv[2]  : "demo";
 
     test(build);
 
@@ -190,7 +158,6 @@ int main(int argc, char* argv[]) {
     test(one_head);
     test(just_one);
 
-    test(demo0);
-    test(demo1);
+    test(demo);
     return 0;
 }

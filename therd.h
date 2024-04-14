@@ -12,6 +12,7 @@ struct builder {
     int           insts,depth;
 };
 struct builder st1(struct builder, int ptr);
+struct builder st3(struct builder, int ptr);
 struct builder ld1(struct builder, int ptr);
 struct builder uni(struct builder, int ptr);
 struct builder imm(struct builder,  float );
