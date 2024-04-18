@@ -1,5 +1,4 @@
 #include "therd.h"
-#include <assert.h>
 #if 1 && defined(__ARM_NEON)
     #include <arm_neon.h>
     #define HAVE_NEON_INTRINSICS
@@ -18,7 +17,6 @@ typedef void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,
 
 static struct builder append_(struct builder b, int delta, fn fn[], int fns, struct inst inst) {
     inst.fn = fn[b.depth < fns-1 ? b.depth : fns-1];
-    assert(inst.fn);
     b.inst[b.insts++] = inst;
     b.depth += delta;
     return b;
