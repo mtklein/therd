@@ -74,15 +74,15 @@ static void test_3xp2(int const loops) {
 }
 
 static void test_pressure(int const loops) {
-    for (int pressure = 1; pressure <= 8; pressure++) {
-        struct inst p[15];
+    struct inst p[20];
+    F stack[len(p)-8];
+    for (int pressure = 0; pressure <= len(stack); pressure++) {
         struct builder b = {.inst=p};
         for (int i = 0; i < pressure; i++) {
             b = imm(b, (float)i);
         }
         build_3xp2(b);
 
-        F stack[8];
         check_3xp2(p,loops,stack);
     }
 }
