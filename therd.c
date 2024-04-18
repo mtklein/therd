@@ -48,6 +48,7 @@ defn(add_8) { v6     += v7   ;       next; }
 defn(add_9) { v7     += sp[0]; sp--; next; }
 defn(add_X) { sp[-1] += sp[0]; sp--; next; }
 static fn add_fn[] = {0,0,add_2,add_3,add_4,add_5,add_6,add_7,add_8,add_9,add_X};
+struct builder add(struct builder b) { return append(b, -1, add_fn, 0); }
 
 defn(mad_3 ) { v0     += v1    * v2    ;          next; }
 defn(mad_4 ) { v1     += v2    * v3    ;          next; }
@@ -59,15 +60,7 @@ defn(mad_9 ) { v6     += v7    * sp[ 0]; sp -= 1; next; }
 defn(mad_10) { v7     += sp[0] * sp[-1]; sp -= 2; next; }
 defn(mad_X ) { sp[-2] += sp[0] * sp[-1]; sp -= 2; next; }
 static fn mad_fn[] = {0,0,0,mad_3,mad_4,mad_5,mad_6,mad_7,mad_8,mad_9,mad_10,mad_X};
-
-struct builder add(struct builder b) {
-    if ((0) && b.inst[b.insts-1].fn == mul_fn[1 + b.depth]) { // TODO: 1 + b.depth needs more care
-        b.insts -= 1;
-        b.depth += 1;
-        return append(b, -2, mad_fn, 0);
-    }
-    return append(b, -1, add_fn, 0);
-}
+struct builder mad(struct builder b) { return append(b, -2, mad_fn, 0); }
 
 static void st1_(float *dst, int n, F x) {
     if (n%K) {

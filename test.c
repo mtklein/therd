@@ -49,8 +49,7 @@ static void build_3xp2(struct builder b) {
     b = imm(b, 2.0f);
     b = ld1(b,    0);
     b = uni(b,    2);
-    b = mul(b      );
-    b = add(b      );
+    b = mad(b      );
     ret(st1(b,    1));
 }
 
