@@ -54,10 +54,7 @@ static void build_3xp2(struct builder b) {
     ret(st1(b,    1));
 }
 
-static void test_3xp2(int const loops) {
-    struct inst p[7];
-    struct builder b = {.inst=p};
-    build_3xp2(b);
+static void check_3xp2(struct inst const *p, int const loops) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
           dst[len(src)] = {0};
@@ -67,6 +64,13 @@ static void test_3xp2(int const loops) {
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 3*src[i] + 2));
     }
+}
+
+static void test_3xp2(int const loops) {
+    struct inst p[7];
+    struct builder b = {.inst=p};
+    build_3xp2(b);
+    check_3xp2(p,loops);
 }
 
 // Regression test for a bug when n%K == 0.
