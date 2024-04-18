@@ -37,7 +37,7 @@ static void test_noop(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        run(&p, len(src), (void*[]){src,dst,&uni});
+        run(&p, len(src), NULL, (void*[]){src,dst,&uni});
     }
 
     for (int i = 0; i < len(src); i++) {
@@ -59,7 +59,7 @@ static void check_3xp2(struct inst const *p, int const loops) {
           uni   = 3.0f,
           dst[len(src)] = {0};
     for (int i = 0; i < loops; i++) {
-        run(p, len(src), (void*[]){src,dst,&uni});
+        run(p, len(src), NULL, (void*[]){src,dst,&uni});
     }
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 3*src[i] + 2));
@@ -81,7 +81,7 @@ static void test_all_body(int const loops) {
     float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), (void*[]){buf,buf,&uni});
+        run(p, len(buf), NULL, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
@@ -96,7 +96,7 @@ static void test_one_head(int const loops) {
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), (void*[]){buf,buf,&uni});
+        run(p, len(buf), NULL, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
@@ -111,7 +111,7 @@ static void test_just_one(int const loops) {
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, 1, (void*[]){buf,buf,&uni});
+        run(p, 1, NULL, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], i == 0 ? 3*(float)(i+1) + 2
@@ -142,7 +142,7 @@ static void test_demo(int const loops) {
         for (int y = 0; y < h; y++) {
             float inv_w =            (1/(float)w),
                 y_inv_h = (float)y * (1/(float)h);
-            run(p, w, (void*[]){rgb+w*y,&inv_w,&y_inv_h});
+            run(p, w, NULL, (void*[]){rgb+w*y,&inv_w,&y_inv_h});
         }
     }
     if (loops == 1) {

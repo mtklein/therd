@@ -7,11 +7,11 @@
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
 
-typedef void (*fn)(struct inst const*, int, int, void*[], F,F,F,F,F,F,F,F);
+typedef void (*fn)(struct inst const*, int, int, void*[], F,F,F,F,F,F,F,F,F*);
 
-#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7); return
+#define next ip[1].fn(ip+1,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7,v); return
 #define defn(name) static void name(struct inst const *ip, int i, int n, void* ptr[], \
-                                    F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
+                                    F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7, F *v)
 
 defn(mul_2) { v0 *= v1; next; }
 defn(mul_3) { v1 *= v2; next; }
@@ -162,16 +162,16 @@ defn(loop) {
     n -= n%K ? 1 : K;
     if (n > 0) {
         struct inst const *top = ip->ptr;
-        top->fn(top,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7);
+        top->fn(top,i,n,ptr, v0,v1,v2,v3,v4,v5,v6,v7,v);
     }
 }
 void ret(struct builder b) {
     b.inst[b.insts] = (struct inst){.fn=loop, .ptr=b.inst};
 }
 
-void run(struct inst const *p, int n, void* ptr[]) {
+void run(struct inst const *p, int n, F *v, void* ptr[]) {
     if (n > 0) {
         F z = {0};
-        p->fn(p,0,n,ptr, z,z,z,z,z,z,z,z);
+        p->fn(p,0,n,ptr, z,z,z,z,z,z,z,z,v);
     }
 }
