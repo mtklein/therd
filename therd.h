@@ -8,8 +8,8 @@ struct inst {
 };
 
 struct builder {
-    struct inst * inst;
-    int           insts,depth;
+    struct inst *inst;
+    int          insts,depth;
 };
 struct builder st1(struct builder, int ptr);
 struct builder st3(struct builder, int ptr);
