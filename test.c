@@ -54,12 +54,12 @@ static void build_3xp2(struct builder b) {
     ret(st1(b,    1));
 }
 
-static void check_3xp2(struct inst const *p, int const loops) {
+static void check_3xp2(struct inst const *p, int const loops, F *stack) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           uni   = 3.0f,
           dst[len(src)] = {0};
     for (int i = 0; i < loops; i++) {
-        run(p, len(src), NULL, (void*[]){src,dst,&uni});
+        run(p, len(src), stack, (void*[]){src,dst,&uni});
     }
     for (int i = 0; i < len(src); i++) {
         want(equiv(dst[i], 3*src[i] + 2));
@@ -70,7 +70,21 @@ static void test_3xp2(int const loops) {
     struct inst p[7];
     struct builder b = {.inst=p};
     build_3xp2(b);
-    check_3xp2(p,loops);
+    check_3xp2(p,loops,NULL);
+}
+
+static void test_pressure(int const loops) {
+    for (int pressure = 1; pressure <= 8; pressure++) {
+        struct inst p[15];
+        struct builder b = {.inst=p};
+        for (int i = 0; i < pressure; i++) {
+            b = imm(b, (float)i);
+        }
+        build_3xp2(b);
+
+        F stack[8];
+        check_3xp2(p,loops,stack);
+    }
 }
 
 // Regression test for a bug when n%K == 0.
@@ -161,6 +175,7 @@ int main(int argc, char* argv[]) {
 
     test(noop);
     test(3xp2);
+    test(pressure);
     test(all_body);
     test(one_head);
     test(just_one);
