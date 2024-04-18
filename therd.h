@@ -9,7 +9,7 @@ struct inst {
 
 struct builder {
     struct inst *inst;
-    int          insts,depth;
+    int    depth,insts;
 };
 struct builder st1(struct builder, int ptr);
 struct builder st3(struct builder, int ptr);
