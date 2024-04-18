@@ -10,12 +10,11 @@
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
 
-typedef void (*fn)(struct inst const*, int, int, void*[],F*,F*, F,F,F,F,F,F,F,F);
+typedef void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,F);
 
-#define next ip[1].fn(ip+1,i,n,ptr,stack,sp, v0,v1,v2,v3,v4,v5,v6,v7); return
-#define defn(name) \
-    static void name(struct inst const *ip, int i, int n, void* ptr[], F *stack, F *sp, \
-                     F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
+#define next ip[1].fn(ip+1,n,stack,ptr,i,sp, v0,v1,v2,v3,v4,v5,v6,v7); return
+#define defn(name) static void name(struct inst const *ip, int n, F *stack, void* ptr[], \
+                                    int i, F *sp, F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 
 static struct builder append_(struct builder b, int delta, fn fn[], int fns, struct inst inst) {
     inst.fn = fn[b.depth < fns-1 ? b.depth : fns-1];
@@ -170,7 +169,7 @@ defn(loop) {
     if (n > 0) {
         struct inst const *top = ip->ptr;
         sp = stack;
-        top->fn(top,i,n,ptr,stack,sp, v0,v1,v2,v3,v4,v5,v6,v7);
+        top->fn(top,n,stack,ptr, i,sp, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
 void ret(struct builder b) {
@@ -181,6 +180,6 @@ void run(struct inst const *p, int n, F *stack, void* ptr[]) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
     F u;
-    p->fn(p,0,n,ptr,stack,stack, u,u,u,u,u,u,u,u);
+    p->fn(p,n,stack,ptr, 0,stack, u,u,u,u,u,u,u,u);
 #pragma GCC diagnostic pop
 }

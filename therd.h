@@ -3,7 +3,7 @@
 typedef float __attribute__(( vector_size(16), aligned(4) )) F;
 
 struct inst {
-    void (*fn)(struct inst const*, int, int, void*[],F*,F*, F,F,F,F,F,F,F,F);
+    void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,F);
     union { float imm; int ix; void *ptr; };
 };
 
