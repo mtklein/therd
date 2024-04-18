@@ -178,8 +178,9 @@ void ret(struct builder b) {
 }
 
 void run(struct inst const *p, int n, F *stack, void* ptr[]) {
-    if (n > 0) {
-        F z = {0};
-        p->fn(p,0,n,ptr,stack,stack, z,z,z,z,z,z,z,z);
-    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+    F u;
+    p->fn(p,0,n,ptr,stack,stack, u,u,u,u,u,u,u,u);
+#pragma GCC diagnostic pop
 }
