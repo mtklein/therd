@@ -4,6 +4,14 @@
     #define HAVE_NEON_INTRINSICS
 #endif
 
+// TODO:
+//  [ ] some sort of control flow
+//        - jumps?
+//        - gosub?
+//        - call_if to independent programs?
+//  [ ] compare performance with top-of-stack-in-register impl.
+//        - control flow is a lot easier there when instructions are stack-depth-independent
+
 #define len(x) (int)( sizeof(x) / sizeof(*x) )
 
 #define K ((int) (sizeof(F) / sizeof(float)))
