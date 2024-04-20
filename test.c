@@ -141,10 +141,11 @@ static void test_just_one(int const loops) {
     }
 }
 
+static int pressure;
 static void test_demo(int const loops) {
     struct inst p[7];
     {
-        struct builder b = {.p=p};
+        struct builder b = {.p=p, .depth=pressure};
         enum {rgb, inv_w, y_inv_h};
 
         b = id (b         );  // x
@@ -180,6 +181,7 @@ static void test_demo(int const loops) {
 int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "demo";
+    pressure          = argc > 3 ? atoi(argv[3]) : 0;
 
     test(noop);
     test(build);
