@@ -24,8 +24,8 @@ typedef void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,
                                     int i, F *sp, F v0, F v1, F v2, F v3, F v4, F v5, F v6, F v7)
 
 static struct builder append_(struct builder b, int delta, fn fn[], int fns, struct inst inst) {
-    const _Bool use_regs = 1;
-    inst.fn = fn[use_regs && b.depth < fns-1 ? b.depth : fns-1];
+    const intptr_t effective_depth = b.depth + 0;
+    inst.fn = fn[effective_depth < fns-1 ? effective_depth : fns-1];
     *b.p++ = inst;
     b.depth += delta;
     return b;
