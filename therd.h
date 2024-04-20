@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 typedef float __attribute__(( vector_size(16), aligned(4) )) F;
 
@@ -9,7 +10,7 @@ struct inst {
 
 struct builder {
     struct inst *p;
-    int          depth,unused;
+    intptr_t depth;
 };
 struct builder st1(struct builder, int ptr);
 struct builder st3(struct builder, int ptr);
