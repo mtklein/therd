@@ -59,7 +59,8 @@ static void test_build(int const loops) {
         struct builder b = {.p=p};
         ret(build_3xp2(b), p);
     }
-    check_3xp2(p,1,NULL);
+    F stack[len(p)];
+    check_3xp2(p,1,stack);
 }
 
 static void test_3xp2(int const loops) {
@@ -68,19 +69,19 @@ static void test_3xp2(int const loops) {
         struct builder b = {.p=p};
         ret(build_3xp2(b), p);
     }
-    check_3xp2(p,loops,NULL);
+    F stack[len(p)];
+    check_3xp2(p,loops,stack);
 }
 
 static void test_pressure(int const loops) {
     struct inst p[20];
-    F stack[len(p)-8];
-    for (int pressure = 0; pressure <= len(stack); pressure++) {
+    for (int pressure = 0; pressure <= len(p)-6; pressure++) {
         struct builder b = {.p=p};
         for (int i = 0; i < pressure; i++) {
             b = imm(b, (float)i);
         }
         ret(build_3xp2(b),p);
-
+        F stack[len(p)];
         check_3xp2(p,loops,stack);
     }
 }
@@ -95,7 +96,8 @@ static void test_all_body(int const loops) {
     float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), NULL, (void*[]){buf,buf,&uni});
+        F stack[len(p)];
+        run(p, len(buf), stack, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
@@ -112,7 +114,8 @@ static void test_one_head(int const loops) {
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, len(buf), NULL, (void*[]){buf,buf,&uni});
+        F stack[len(p)];
+        run(p, len(buf), stack, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], 3*(float)(i+1) + 2));
@@ -129,7 +132,8 @@ static void test_just_one(int const loops) {
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
-        run(p, 1, NULL, (void*[]){buf,buf,&uni});
+        F stack[len(p)];
+        run(p, 1, stack, (void*[]){buf,buf,&uni});
     }
     for (int i = 0; loops == 1 && i < len(buf); i++) {
         want(equiv(buf[i], i == 0 ? 3*(float)(i+1) + 2
@@ -161,7 +165,8 @@ static void test_demo(int const loops) {
         for (int y = 0; y < h; y++) {
             float inv_w =            (1/(float)w),
                 y_inv_h = (float)y * (1/(float)h);
-            run(p, w, NULL, (void*[]){rgb+w*y,&inv_w,&y_inv_h});
+            F stack[len(p)];
+            run(p, w, stack, (void*[]){rgb+w*y,&inv_w,&y_inv_h});
         }
     }
     if (loops == 1) {
