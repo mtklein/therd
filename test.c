@@ -15,21 +15,22 @@ static _Bool equiv(float x, float y) {
 static void test_build(int const loops) {
     struct inst p[7];
     for (int i = 0; i < loops; i++) {
-        struct builder b = {.inst=p};
+        struct builder b = {.p=p};
         b = imm(b, 2.0f);
         b = ld1(b,    0);
         b = uni(b,    2);
         b = mul(b      );
         b = add(b      );
-        ret(st1(b,    1));
+        b = st1(b,    1);
+        ret(b,p);
     }
 }
 
 static void test_noop(int const loops) {
     struct inst p;
     {
-        struct builder b = {.inst=&p};
-        ret(b);
+        struct builder b = {.p=&p};
+        ret(b,&p);
     }
 
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
@@ -45,12 +46,14 @@ static void test_noop(int const loops) {
     }
 }
 
-static void build_3xp2(struct builder b) {
+static void build_3xp2(struct inst p[6]) {
+    struct builder b = {.p=p};
     b = imm(b, 2.0f);
     b = ld1(b,    0);
     b = uni(b,    2);
     b = mad(b      );
-    ret(st1(b,    1));
+    b = st1(b,    1);
+    ret(b,p);
 }
 
 static void check_3xp2(struct inst const *p, int const loops, F *stack) {
@@ -66,9 +69,8 @@ static void check_3xp2(struct inst const *p, int const loops, F *stack) {
 }
 
 static void test_3xp2(int const loops) {
-    struct inst p[7];
-    struct builder b = {.inst=p};
-    build_3xp2(b);
+    struct inst p[6];
+    build_3xp2(p);
     check_3xp2(p,loops,NULL);
 }
 
@@ -76,11 +78,16 @@ static void test_pressure(int const loops) {
     struct inst p[20];
     F stack[len(p)-8];
     for (int pressure = 0; pressure <= len(stack); pressure++) {
-        struct builder b = {.inst=p};
+        struct builder b = {.p=p};
         for (int i = 0; i < pressure; i++) {
             b = imm(b, (float)i);
         }
-        build_3xp2(b);
+        b = imm(b, 2.0f);
+        b = ld1(b,    0);
+        b = uni(b,    2);
+        b = mad(b      );
+        b = st1(b,    1);
+        ret(b,p);
 
         check_3xp2(p,loops,stack);
     }
@@ -88,9 +95,8 @@ static void test_pressure(int const loops) {
 
 // Regression test for a bug when n%K == 0.
 static void test_all_body(int const loops) {
-    struct inst p[7];
-    struct builder b = {.inst=p};
-    build_3xp2(b);
+    struct inst p[6];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -103,9 +109,8 @@ static void test_all_body(int const loops) {
 
 // Regression test for a bug when n>1 && n%K == 1.
 static void test_one_head(int const loops) {
-    struct inst p[7];
-    struct builder b = {.inst=p};
-    build_3xp2(b);
+    struct inst p[6];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -118,9 +123,8 @@ static void test_one_head(int const loops) {
 
 // Regression test for a bug when n == 1.
 static void test_just_one(int const loops) {
-    struct inst p[7];
-    struct builder b = {.inst=p};
-    build_3xp2(b);
+    struct inst p[6];
+    build_3xp2(p);
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -133,9 +137,9 @@ static void test_just_one(int const loops) {
 }
 
 static void test_demo(int const loops) {
-    struct inst p[9];
+    struct inst p[7];
     {
-        struct builder b = {.inst=p};
+        struct builder b = {.p=p};
         enum {rgb, inv_w, y_inv_h};
 
         b = id (b         );  // x
@@ -143,7 +147,8 @@ static void test_demo(int const loops) {
         b = mul(b         );  // x*inv_h
         b = imm(b,    0.5f);  // x*inv_h 0.5
         b = uni(b, y_inv_h);  // x*inv_h 0.5 y_inv_h
-        ret(st3(b,     rgb));
+        b = st3(b,     rgb);
+        ret(b,p);
     }
 
     int const w = 319,

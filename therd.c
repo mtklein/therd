@@ -25,7 +25,7 @@ typedef void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,
 
 static struct builder append_(struct builder b, int delta, fn fn[], int fns, struct inst inst) {
     inst.fn = fn[b.depth < fns-1 ? b.depth : fns-1];
-    b.inst[b.insts++] = inst;
+    *b.p++ = inst;
     b.depth += delta;
     return b;
 }
@@ -178,8 +178,8 @@ defn(loop) {
         top->fn(top,n,stack,ptr, i,sp, v0,v1,v2,v3,v4,v5,v6,v7);
     }
 }
-void ret(struct builder b) {
-    b.inst[b.insts] = (struct inst){.fn=loop, .ptr=b.inst};
+void ret(struct builder b, struct inst *top) {
+    *b.p = (struct inst){.fn=loop, .ptr=top};
 }
 
 void run(struct inst const *p, int n, F *stack, void* ptr[]) {

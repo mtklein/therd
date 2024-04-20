@@ -8,8 +8,8 @@ struct inst {
 };
 
 struct builder {
-    struct inst *inst;
-    int    depth,insts;
+    struct inst *p;
+    int          depth,unused;
 };
 struct builder st1(struct builder, int ptr);
 struct builder st3(struct builder, int ptr);
@@ -22,6 +22,6 @@ struct builder mul(struct builder);
 struct builder add(struct builder);
 struct builder mad(struct builder);
 
-void ret(struct builder);
+void ret(struct builder, struct inst*);
 
 void run(struct inst const*, int n, F *stack, void* ptr[]);
