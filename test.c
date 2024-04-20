@@ -12,20 +12,6 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
-static void test_build(int const loops) {
-    struct inst p[7];
-    for (int i = 0; i < loops; i++) {
-        struct builder b = {.p=p};
-        b = imm(b, 2.0f);
-        b = ld1(b,    0);
-        b = uni(b,    2);
-        b = mul(b      );
-        b = add(b      );
-        b = st1(b,    1);
-        ret(b,p);
-    }
-}
-
 static void test_noop(int const loops) {
     struct inst p;
     {
@@ -46,14 +32,13 @@ static void test_noop(int const loops) {
     }
 }
 
-static void build_3xp2(struct inst p[6]) {
-    struct builder b = {.p=p};
+static struct builder build_3xp2(struct builder b) {
     b = imm(b, 2.0f);
     b = ld1(b,    0);
     b = uni(b,    2);
     b = mad(b      );
     b = st1(b,    1);
-    ret(b,p);
+    return b;
 }
 
 static void check_3xp2(struct inst const *p, int const loops, F *stack) {
@@ -68,9 +53,21 @@ static void check_3xp2(struct inst const *p, int const loops, F *stack) {
     }
 }
 
+static void test_build(int const loops) {
+    struct inst p[6];
+    for (int i = 0; i < loops; i++) {
+        struct builder b = {.p=p};
+        ret(build_3xp2(b), p);
+    }
+    check_3xp2(p,1,NULL);
+}
+
 static void test_3xp2(int const loops) {
     struct inst p[6];
-    build_3xp2(p);
+    {
+        struct builder b = {.p=p};
+        ret(build_3xp2(b), p);
+    }
     check_3xp2(p,loops,NULL);
 }
 
@@ -82,12 +79,7 @@ static void test_pressure(int const loops) {
         for (int i = 0; i < pressure; i++) {
             b = imm(b, (float)i);
         }
-        b = imm(b, 2.0f);
-        b = ld1(b,    0);
-        b = uni(b,    2);
-        b = mad(b      );
-        b = st1(b,    1);
-        ret(b,p);
+        ret(build_3xp2(b),p);
 
         check_3xp2(p,loops,stack);
     }
@@ -96,7 +88,10 @@ static void test_pressure(int const loops) {
 // Regression test for a bug when n%K == 0.
 static void test_all_body(int const loops) {
     struct inst p[6];
-    build_3xp2(p);
+    {
+        struct builder b = {.p=p};
+        ret(build_3xp2(b), p);
+    }
     float buf[] = {1,2,3,4,5,6,7,8,9,10,11,12},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -110,7 +105,10 @@ static void test_all_body(int const loops) {
 // Regression test for a bug when n>1 && n%K == 1.
 static void test_one_head(int const loops) {
     struct inst p[6];
-    build_3xp2(p);
+    {
+        struct builder b = {.p=p};
+        ret(build_3xp2(b), p);
+    }
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -124,7 +122,10 @@ static void test_one_head(int const loops) {
 // Regression test for a bug when n == 1.
 static void test_just_one(int const loops) {
     struct inst p[6];
-    build_3xp2(p);
+    {
+        struct builder b = {.p=p};
+        ret(build_3xp2(b), p);
+    }
     float buf[] = {1,2,3,4,5},
           uni   = 3.0f;
     for (int i = 0; i < loops; i++) {
@@ -175,9 +176,8 @@ int main(int argc, char* argv[]) {
     int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
     char const *bench = argc > 2 ?      argv[2]  : "demo";
 
-    test(build);
-
     test(noop);
+    test(build);
     test(3xp2);
     test(pressure);
     test(all_body);
