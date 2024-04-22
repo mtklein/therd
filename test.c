@@ -103,6 +103,20 @@ static void test_just_one(int const loops) {
 }
 
 static void test_demo(int const loops) {
+    struct inst p[] = {
+        id,
+        uni(NULL),
+        mul,
+        imm(0.5f),
+        uni(NULL),
+        st3(NULL),
+        ret(p),
+    };
+
+    void const* *uni0 = &p[1].cptr;
+    void const* *uni1 = &p[4].cptr;
+    void*       *dst  = &p[5].ptr;
+
     int const w = 319,
               h = 240;
     struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
@@ -112,13 +126,9 @@ static void test_demo(int const loops) {
             float inv_w   =            (1/(float)w),
                   y_inv_h = (float)y * (1/(float)h);
 
-            struct inst p[] = {
-                id, uni(&inv_w), mul,
-                imm(0.5f),
-                uni(&y_inv_h),
-                st3((float*)(rgb + w*y)),
-                ret(p),
-            };
+            *uni0 = &inv_w;
+            *uni1 = &y_inv_h;
+            *dst  = rgb + w*y;
 
             F stack[len(p)];
             run(p, w, stack);
