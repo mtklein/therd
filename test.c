@@ -16,9 +16,6 @@ static void test_3xp2_(int n, int const loops) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           three = 3.0f,
           dst[len(src)] = {0};
-    if (n < 0) {
-        n = len(src);
-    }
     want(n <= len(src));
 
     for (int i = 0; i < loops; i++) {
@@ -44,7 +41,7 @@ static void test_3xp2(int const loops) {
     test_3xp2_(8,1);
     test_3xp2_(9,1);
 
-    test_3xp2_(-1,loops);
+    test_3xp2_(11,loops);
 }
 
 static void test_demo(int const loops) {
