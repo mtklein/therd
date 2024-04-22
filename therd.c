@@ -96,14 +96,14 @@ defn(imm) {
 }
 struct inst imm(float imm) { return (struct inst){.fn=imm_, .imm=imm}; }
 
-defn(id) {
+defn(idx) {
     union { float f[8]; F v; } iota = {{0,1,2,3,4,5,6,7}};
     _Static_assert(len(iota.f) >= K, "");
 
     *sp++ = splat(F, (float)i) + iota.v;
     next;
 }
-struct inst const id = {.fn=id_};
+struct inst const idx = {.fn=idx_};
 
 defn(loop) {
     i += n%K ? 1 : K;

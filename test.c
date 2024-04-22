@@ -104,7 +104,7 @@ static void test_just_one(int const loops) {
 
 static void test_demo(int const loops) {
     struct inst p[] = {
-        id,
+        idx,
         uni(NULL),
         mul,
         imm(0.5f),

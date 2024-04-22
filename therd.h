@@ -8,7 +8,7 @@ struct inst {
     union { float imm; void *ptr; void const *cptr; };
 };
 
-extern struct inst const id, mul,add,mad;
+extern struct inst const idx,mul,add,mad;
 struct inst st1(float[]);
 struct inst st3(float[]);
 struct inst ld1(float const[]);
