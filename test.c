@@ -18,7 +18,7 @@ static void test_3xp2(int const loops) {
           dst[len(src)] = {0};
 
     for (int i = 0; i < loops; i++) {
-        F stack[6];
+        F stack[3];
         for (struct vm vm = {stack,0,len(src)}; vm.n; vm = loop(vm,stack)) {
             vm = imm(vm, 2.0f);
             vm = ld1(vm, src);
@@ -41,7 +41,7 @@ static void test_demo(int const loops) {
         for (int y = 0; y < h; y++) {
             float inv_w   =            (1/(float)w),
                   y_inv_h = (float)y * (1/(float)h);
-            F stack[6];
+            F stack[3];
             for (struct vm vm = {stack,0,w}; vm.n; vm = loop(vm,stack)) {
                 vm = idx(vm);
                 vm = uni(vm, &inv_w);
