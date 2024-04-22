@@ -8,8 +8,7 @@ struct vm {
 };
 
 struct vm idx(struct vm);
-struct vm imm(struct vm, float);
-struct vm uni(struct vm, float const*);
+struct vm val(struct vm, float);
 struct vm ld1(struct vm, float const[]);
 struct vm st1(struct vm, float[]);
 struct vm st3(struct vm, float[]);

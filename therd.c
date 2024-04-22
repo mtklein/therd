@@ -87,13 +87,7 @@ struct vm ld1(struct vm vm, float const src[]) {
     return vm;
 }
 
-struct vm uni(struct vm vm, float const *src) {
-    *vm.sp++ = splat(F, *src);
-    return vm;
-}
-
-
-struct vm imm(struct vm vm, float imm) {
+struct vm val(struct vm vm, float imm) {
     *vm.sp++ = splat(F, imm);
     return vm;
 }

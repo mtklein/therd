@@ -14,16 +14,15 @@ static _Bool equiv(float x, float y) {
 
 static void test_3xp2_(int n, int const loops) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
-          three = 3.0f,
           dst[len(src)] = {0};
     want(n <= len(src));
 
     for (int i = 0; i < loops; i++) {
         F stack[3];
         for (struct vm vm = {stack,0,n}; vm.n; vm = loop(vm,stack)) {
-            vm = imm(vm, 2.0f);
+            vm = val(vm, 2.0f);
             vm = ld1(vm, src);
-            vm = uni(vm, &three);
+            vm = val(vm, 3.0f);
             vm = mad(vm);
             vm = st1(vm, dst);
         }
@@ -54,10 +53,10 @@ static void test_demo(int const loops) {
             F stack[3];
             for (struct vm vm = {stack,0,w}; vm.n; vm = loop(vm,stack)) {
                 vm = idx(vm);
-                vm = imm(vm, 1/(float)w);
+                vm = val(vm, 1/(float)w);
                 vm = mul(vm);
-                vm = imm(vm, 0.5f);
-                vm = imm(vm, (float)y * (1/(float)h));
+                vm = val(vm, 0.5f);
+                vm = val(vm, (float)y * (1/(float)h));
                 vm = st3(vm, &(rgb + w*y)->r);
             }
         }
