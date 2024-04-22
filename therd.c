@@ -1,5 +1,5 @@
 #include "therd.h"
-#if 0 && defined(__ARM_NEON)  // TODO: restore
+#if 1 && defined(__ARM_NEON)
     #include <arm_neon.h>
     #define HAVE_NEON_INTRINSICS
 #endif
@@ -41,8 +41,22 @@ defn(st3) {
     float *p = ip->ptr, *dst = p+3*i;
 
 #if defined(HAVE_NEON_INTRINSICS)
-    float32x4x3_t const xyz = {{x,y,z}};
-    n%K ? vst3q_lane_f32(dst,xyz,0) : vst3q_f32(dst,xyz);
+    float32x4x3_t const lo = {{
+        __builtin_shufflevector(x,x,0,1,2,3),
+        __builtin_shufflevector(y,y,0,1,2,3),
+        __builtin_shufflevector(z,z,0,1,2,3),
+    }}, hi = {{
+        __builtin_shufflevector(x,x,4,5,6,7),
+        __builtin_shufflevector(y,y,4,5,6,7),
+        __builtin_shufflevector(z,z,4,5,6,7),
+    }};
+
+    if (n%K) {
+        vst3q_lane_f32(dst,lo,0);
+    } else {
+        vst3q_f32(dst+ 0, lo);
+        vst3q_f32(dst+12, hi);
+    }
 #else
     if (n%K) {
         *dst++ = x[0];
