@@ -4,25 +4,16 @@
 typedef float __attribute__(( vector_size(16), aligned(4) )) F;
 
 struct inst {
-    void (*fn)(struct inst const*, int, F*, void*[], int, F*, F,F,F,F,F,F,F,F);
-    union { float imm; int ix; void *ptr; };
+    void (*fn)(struct inst const*, int, F*, void*[], int, F*);
+    union { float imm; int ix; void const *ptr; };
 };
 
-struct builder {
-    struct inst *p;
-    intptr_t depth;
-};
-struct builder st1(struct builder, int ptr);
-struct builder st3(struct builder, int ptr);
-struct builder ld1(struct builder, int ptr);
-struct builder uni(struct builder, int ptr);
-struct builder imm(struct builder,  float );
-struct builder  id(struct builder         );
-
-struct builder mul(struct builder);
-struct builder add(struct builder);
-struct builder mad(struct builder);
-
-void ret(struct builder, struct inst*);
+extern struct inst const id, mul,add,mad;
+struct inst st1(int ix);
+struct inst st3(int ix);
+struct inst ld1(int ix);
+struct inst uni(int ix);
+struct inst imm(float);
+struct inst ret(struct inst const*);
 
 void run(struct inst const*, int n, F *stack, void* ptr[]);
