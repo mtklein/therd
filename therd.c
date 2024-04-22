@@ -36,7 +36,7 @@ defn(st3) {
     F x = *--sp,
       y = *--sp,
       z = *--sp;
-    float *p = ptr[ip->ix], *dst = p+i;
+    float *p = ptr[ip->ix], *dst = p+3*i;
 
 #if defined(HAVE_NEON_INTRINSICS)
     float32x4x3_t const xyz = {{x,y,z}};
