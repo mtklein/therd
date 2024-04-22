@@ -1,5 +1,4 @@
 #pragma once
-#include <stdint.h>
 
 typedef float __attribute__(( vector_size(32), aligned(4) )) F;
 

@@ -4,9 +4,8 @@
     #define HAVE_NEON_INTRINSICS
 #endif
 
-#define len(arr) (int)(sizeof arr / sizeof *arr)
-
-#define K ((int) (sizeof(F) / sizeof(float)))
+#define len(x) (int)(sizeof x / sizeof x[0])
+#define K len((F){0})
 #define splat(T,v) (((T){0} + 1) * (v))
 
 struct vm mul(struct vm vm) {
@@ -108,8 +107,8 @@ struct vm idx(struct vm vm) {
 }
 
 struct vm loop(struct vm vm, F *stack) {
+    vm.sp = stack;
     vm.i += (vm.n % K) ? 1 : K;
     vm.n -= (vm.n % K) ? 1 : K;
-    vm.sp = stack;
     return vm;
 }
