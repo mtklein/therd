@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-typedef float __attribute__(( vector_size(16), aligned(4) )) F;
+typedef float __attribute__(( vector_size(32), aligned(4) )) F;
 
 struct inst {
     void (*fn)(struct inst const*, int, F*, int, F*);

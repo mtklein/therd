@@ -1,8 +1,10 @@
 #include "therd.h"
-#if 1 && defined(__ARM_NEON)
+#if 0 && defined(__ARM_NEON)  // TODO: restore
     #include <arm_neon.h>
     #define HAVE_NEON_INTRINSICS
 #endif
+
+#define len(arr) (int)(sizeof arr / sizeof *arr)
 
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
@@ -43,12 +45,16 @@ defn(st3) {
     n%K ? vst3q_lane_f32(dst,xyz,0) : vst3q_f32(dst,xyz);
 #else
     if (n%K) {
-        *dst++ = x[0]; *dst++ = y[0]; *dst++ = z[0];
+        *dst++ = x[0];
+        *dst++ = y[0];
+        *dst++ = z[0];
     } else {
-        *dst++ = x[0]; *dst++ = y[0]; *dst++ = z[0];
-        *dst++ = x[1]; *dst++ = y[1]; *dst++ = z[1];
-        *dst++ = x[2]; *dst++ = y[2]; *dst++ = z[2];
-        *dst++ = x[3]; *dst++ = y[3]; *dst++ = z[3];
+        #pragma GCC unroll 32768
+        for (int j = 0; j < K; j++) {
+            *dst++ = x[j];
+            *dst++ = y[j];
+            *dst++ = z[j];
+        }
     }
 #endif
     next;
@@ -77,7 +83,10 @@ defn(imm) {
 struct inst imm(float imm) { return (struct inst){.fn=imm_, .imm=imm}; }
 
 defn(id) {
-    *sp++ = splat(F, (float)i) + (F){0,1,2,3};
+    union { float f[8]; F v; } iota = {{0,1,2,3,4,5,6,7}};
+    _Static_assert(len(iota.f) >= K, "");
+
+    *sp++ = splat(F, (float)i) + iota.v;
     next;
 }
 struct inst const id = {.fn=id_};
