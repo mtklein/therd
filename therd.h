@@ -3,17 +3,20 @@
 
 typedef float __attribute__(( vector_size(32), aligned(4) )) F;
 
-struct inst {
-    void (*fn)(struct inst const*, int, F*, int, F*);
-    union { float imm; void *ptr; void const *cptr; };
+struct vm {
+    F  *sp;
+    int i,n;
 };
 
-extern struct inst const idx,mul,add,mad;
-struct inst st1(float[]);
-struct inst st3(float[]);
-struct inst ld1(float const[]);
-struct inst uni(float const*);
-struct inst imm(float);
-struct inst ret(struct inst const*);
+struct vm idx(struct vm);
+struct vm imm(struct vm, float);
+struct vm uni(struct vm, float const*);
+struct vm ld1(struct vm, float const[]);
+struct vm st1(struct vm, float[]);
+struct vm st3(struct vm, float[]);
 
-void run(struct inst const*, int n, F *stack);
+struct vm mul(struct vm);
+struct vm add(struct vm);
+struct vm mad(struct vm);
+
+struct vm loop(struct vm, F *stack);

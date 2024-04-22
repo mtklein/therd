@@ -9,36 +9,44 @@
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
 
-#define next ip[1].fn(ip+1,n,stack,i,sp); return
-#define defn(name) \
-    static void name##_(struct inst const *ip, int n, F *stack, int i, F *sp)
+struct vm mul(struct vm vm) {
+    F x = *--vm.sp,
+      y = *--vm.sp;
+    *vm.sp++ = x*y;
+    return vm;
+}
 
-defn(mul) { F x = *--sp, y = *--sp;            *sp++ = x*y  ; next; }
-defn(add) { F x = *--sp, y = *--sp;            *sp++ = x+y  ; next; }
-defn(mad) { F x = *--sp, y = *--sp, z = *--sp; *sp++ = x*y+z; next; }
+struct vm add(struct vm vm) {
+    F x = *--vm.sp,
+      y = *--vm.sp;
+    *vm.sp++ = x+y;
+    return vm;
+}
 
-struct inst const mul = { .fn=mul_ };
-struct inst const add = { .fn=add_ };
-struct inst const mad = { .fn=mad_ };
+struct vm mad(struct vm vm) {
+    F x = *--vm.sp,
+      y = *--vm.sp,
+      z = *--vm.sp;
+    *vm.sp++ = x*y+z;
+    return vm;
+}
 
-defn(st1) {
-    F x = *--sp;
-    float *p = ip->ptr, *dst = p+i;
-
-    if (n%K) {
+struct vm st1(struct vm vm, float dst[]) {
+    F x = *--vm.sp;
+    dst += vm.i;
+    if (vm.n % K) {
         *dst = x[0];
     } else {
         *(F*)dst = x;
     }
-    next;
+    return vm;
 }
-struct inst st1(float ptr[]) { return (struct inst){.fn=st1_, .ptr=ptr}; }
 
-defn(st3) {
-    F x = *--sp,
-      y = *--sp,
-      z = *--sp;
-    float *p = ip->ptr, *dst = p+3*i;
+struct vm st3(struct vm vm, float dst[]) {
+    F x = *--vm.sp,
+      y = *--vm.sp,
+      z = *--vm.sp;
+    dst += 3*vm.i;
 
 #if defined(HAVE_NEON_INTRINSICS)
     float32x4x3_t const lo = {{
@@ -51,14 +59,14 @@ defn(st3) {
         __builtin_shufflevector(z,z,4,5,6,7),
     }};
 
-    if (n%K) {
+    if (vm.n % K) {
         vst3q_lane_f32(dst,lo,0);
     } else {
         vst3q_f32(dst+ 0, lo);
         vst3q_f32(dst+12, hi);
     }
 #else
-    if (n%K) {
+    if (vm.n % K) {
         *dst++ = x[0];
         *dst++ = y[0];
         *dst++ = z[0];
@@ -71,51 +79,37 @@ defn(st3) {
         }
     }
 #endif
-    next;
+    return vm;
 }
-struct inst st3(float ptr[]) { return (struct inst){.fn=st3_, .ptr=ptr}; }
 
-defn(ld1) {
-    float const *p = ip->cptr, *src = p+i;
-    *sp++ = n%K ? (F){*src} : *(F const*)src;
-    next;
+struct vm ld1(struct vm vm, float const src[]) {
+    src += vm.i;
+    *vm.sp++ = (vm.n % K) ? (F){*src} : *(F const*)src;
+    return vm;
 }
-struct inst ld1(float const cptr[]) { return (struct inst){.fn=ld1_, .cptr=cptr}; }
 
-defn(uni) {
-    float const *src = ip->cptr;
-    *sp++ = splat(F, *src);
-    next;
+struct vm uni(struct vm vm, float const *src) {
+    *vm.sp++ = splat(F, *src);
+    return vm;
 }
-struct inst uni(float const *cptr) { return (struct inst){.fn=uni_, .cptr=cptr}; }
 
 
-defn(imm) {
-    *sp++ = splat(F, ip->imm);
-    next;
+struct vm imm(struct vm vm, float imm) {
+    *vm.sp++ = splat(F, imm);
+    return vm;
 }
-struct inst imm(float imm) { return (struct inst){.fn=imm_, .imm=imm}; }
 
-defn(idx) {
+struct vm idx(struct vm vm) {
     union { float f[8]; F v; } iota = {{0,1,2,3,4,5,6,7}};
     _Static_assert(len(iota.f) >= K, "");
 
-    *sp++ = splat(F, (float)i) + iota.v;
-    next;
+    *vm.sp++ = splat(F, (float)vm.i) + iota.v;
+    return vm;
 }
-struct inst const idx = {.fn=idx_};
 
-defn(loop) {
-    i += n%K ? 1 : K;
-    n -= n%K ? 1 : K;
-    if (n > 0) {
-        struct inst const *top = ip->cptr;
-        sp = stack;
-        top->fn(top,n,stack, i,sp);
-    }
-}
-struct inst ret(struct inst const *top) { return (struct inst){.fn=loop_, .cptr=top}; }
-
-void run(struct inst const *p, int n, F *stack) {
-    p->fn(p,n,stack, 0,stack);
+struct vm loop(struct vm vm, F *stack) {
+    vm.i += (vm.n % K) ? 1 : K;
+    vm.n -= (vm.n % K) ? 1 : K;
+    vm.sp = stack;
+    return vm;
 }
