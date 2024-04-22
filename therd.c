@@ -7,9 +7,9 @@
 #define K ((int) (sizeof(F) / sizeof(float)))
 #define splat(T,v) (((T){0} + 1) * (v))
 
-#define next ip[1].fn(ip+1,n,stack,ptr,i,sp); return
+#define next ip[1].fn(ip+1,n,stack,i,sp); return
 #define defn(name) \
-    static void name##_(struct inst const *ip, int n, F *stack, void* ptr[], int i, F *sp)
+    static void name##_(struct inst const *ip, int n, F *stack, int i, F *sp)
 
 defn(mul) { F x = *--sp, y = *--sp;            *sp++ = x*y  ; next; }
 defn(add) { F x = *--sp, y = *--sp;            *sp++ = x+y  ; next; }
@@ -21,7 +21,7 @@ struct inst const mad = { .fn=mad_ };
 
 defn(st1) {
     F x = *--sp;
-    float *p = ptr[ip->ix], *dst = p+i;
+    float *p = ip->ptr, *dst = p+i;
 
     if (n%K) {
         *dst = x[0];
@@ -30,13 +30,13 @@ defn(st1) {
     }
     next;
 }
-struct inst st1(int ix) { return (struct inst){.fn=st1_, .ix=ix}; }
+struct inst st1(float ptr[]) { return (struct inst){.fn=st1_, .ptr=ptr}; }
 
 defn(st3) {
     F x = *--sp,
       y = *--sp,
       z = *--sp;
-    float *p = ptr[ip->ix], *dst = p+3*i;
+    float *p = ip->ptr, *dst = p+3*i;
 
 #if defined(HAVE_NEON_INTRINSICS)
     float32x4x3_t const xyz = {{x,y,z}};
@@ -53,21 +53,21 @@ defn(st3) {
 #endif
     next;
 }
-struct inst st3(int ix) { return (struct inst){.fn=st3_, .ix=ix}; }
+struct inst st3(float ptr[]) { return (struct inst){.fn=st3_, .ptr=ptr}; }
 
 defn(ld1) {
-    float const *p = ptr[ip->ix], *src = p+i;
+    float const *p = ip->cptr, *src = p+i;
     *sp++ = n%K ? (F){*src} : *(F const*)src;
     next;
 }
-struct inst ld1(int ix) { return (struct inst){.fn=ld1_, .ix=ix}; }
+struct inst ld1(float const cptr[]) { return (struct inst){.fn=ld1_, .cptr=cptr}; }
 
 defn(uni) {
-    float const *src = ptr[ip->ix];
+    float const *src = ip->cptr;
     *sp++ = splat(F, *src);
     next;
 }
-struct inst uni(int ix) { return (struct inst){.fn=uni_, .ix=ix}; }
+struct inst uni(float const *cptr) { return (struct inst){.fn=uni_, .cptr=cptr}; }
 
 
 defn(imm) {
@@ -86,13 +86,13 @@ defn(loop) {
     i += n%K ? 1 : K;
     n -= n%K ? 1 : K;
     if (n > 0) {
-        struct inst const *top = ip->ptr;
+        struct inst const *top = ip->cptr;
         sp = stack;
-        top->fn(top,n,stack,ptr, i,sp);
+        top->fn(top,n,stack, i,sp);
     }
 }
-struct inst ret(struct inst const *top) { return (struct inst){.fn=loop_, .ptr=top}; }
+struct inst ret(struct inst const *top) { return (struct inst){.fn=loop_, .cptr=top}; }
 
-void run(struct inst const *p, int n, F *stack, void* ptr[]) {
-    p->fn(p,n,stack,ptr, 0,stack);
+void run(struct inst const *p, int n, F *stack) {
+    p->fn(p,n,stack, 0,stack);
 }
