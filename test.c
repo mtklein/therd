@@ -12,14 +12,18 @@ static _Bool equiv(float x, float y) {
         || (x != x && y != y);
 }
 
-static void test_3xp2(int const loops) {
+static void test_3xp2_(int n, int const loops) {
     float src[] = {1,2,3,4,5,6,7,8,9,10,11},
           three = 3.0f,
           dst[len(src)] = {0};
+    if (n < 0) {
+        n = len(src);
+    }
+    want(n <= len(src));
 
     for (int i = 0; i < loops; i++) {
         F stack[3];
-        for (struct vm vm = {stack,0,len(src)}; vm.n; vm = loop(vm,stack)) {
+        for (struct vm vm = {stack,0,n}; vm.n; vm = loop(vm,stack)) {
             vm = imm(vm, 2.0f);
             vm = ld1(vm, src);
             vm = uni(vm, &three);
@@ -28,8 +32,19 @@ static void test_3xp2(int const loops) {
         }
     }
     for (int i = 0; i < len(src); i++) {
-        want(equiv(dst[i], 3*src[i] + 2));
+        want(equiv(dst[i], i < n ? 3*src[i] + 2 : 0));
     }
+}
+
+static void test_3xp2(int const loops) {
+    test_3xp2_(0,1);
+    test_3xp2_(1,1);
+    test_3xp2_(5,1);
+    test_3xp2_(7,1);
+    test_3xp2_(8,1);
+    test_3xp2_(9,1);
+
+    test_3xp2_(-1,loops);
 }
 
 static void test_demo(int const loops) {
