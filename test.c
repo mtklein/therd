@@ -39,15 +39,13 @@ static void test_demo(int const loops) {
 
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++) {
-            float inv_w   =            (1/(float)w),
-                  y_inv_h = (float)y * (1/(float)h);
             F stack[3];
             for (struct vm vm = {stack,0,w}; vm.n; vm = loop(vm,stack)) {
                 vm = idx(vm);
-                vm = uni(vm, &inv_w);
+                vm = imm(vm, 1/(float)w);
                 vm = mul(vm);
                 vm = imm(vm, 0.5f);
-                vm = uni(vm, &y_inv_h);
+                vm = imm(vm, (float)y * (1/(float)h));
                 vm = st3(vm, &(rgb + w*y)->r);
             }
         }
