@@ -42,9 +42,9 @@ struct vm st1(struct vm vm, float dst[]) {
 }
 
 struct vm st3(struct vm vm, float dst[]) {
-    F x = *--vm.sp,
+    F z = *--vm.sp,
       y = *--vm.sp,
-      z = *--vm.sp;
+      x = *--vm.sp;
     dst += 3*vm.i;
 
 #if defined(HAVE_NEON_INTRINSICS)
