@@ -50,19 +50,40 @@ static void test_demo(int const loops) {
             }
         }
     }
+
     if (loops == 1) {
         stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
     }
+    free(rgb);
+}
 
+static void test_naive(int const loops) {
+    int const w = 319,
+              h = 240;
+    struct { float r,g,b; } * const rgb = calloc((size_t)(w*h), sizeof *rgb);
+
+    for (int i = 0; i < loops; i++) {
+        for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            rgb[w*y + x].r = (float)x * (1/(float)w);
+            rgb[w*y + x].g = 0.5f;
+            rgb[w*y + x].b = (float)y * (1/(float)h);
+        }
+    }
+
+    if (loops == 1) {
+        stbi_write_hdr("/dev/stdout", w,h,3, &rgb->r);
+    }
     free(rgb);
 }
 
 #define test(fn) if (loops == 1 || 0 == strcmp(bench, #fn)) test_##fn(loops)
 int main(int argc, char* argv[]) {
-    int  const  loops = argc > 1 ? atoi(argv[1]) : 1;
-    char const *bench = argc > 2 ?      argv[2]  : "demo";
+    char const *bench = argc > 1 ?      argv[1]  : "demo";
+    int  const  loops = argc > 2 ? atoi(argv[2]) : 1;
 
     test(3xp2);
     test(demo);
+    test(naive);
     return 0;
 }
