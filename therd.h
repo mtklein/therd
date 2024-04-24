@@ -1,10 +1,8 @@
 #pragma once
 
-typedef float __attribute__(( vector_size(32), aligned(4) )) F;
-
 struct vm {
-    F  *sp;
-    int i,n;
+    void *stack;
+    int   i,n;
 };
 
 struct vm idx(struct vm);
@@ -17,4 +15,4 @@ struct vm mul(struct vm);
 struct vm add(struct vm);
 struct vm mad(struct vm);
 
-struct vm loop(struct vm, F *stack);
+struct vm loop(struct vm, void *stack);

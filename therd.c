@@ -4,47 +4,44 @@
     #define HAVE_NEON_INTRINSICS
 #endif
 
+#define K 8
+#define vec(T) T __attribute__(( vector_size(K * sizeof(T)), aligned(1) ))
+typedef vec(float) F;
+
 #define len(x) (int)(sizeof x / sizeof x[0])
-#define K len((F){0})
 #define splat(T,v) (((T){0} + 1) * (v))
 
 struct vm mul(struct vm vm) {
-    F x = *--vm.sp,
-      y = *--vm.sp;
-    *vm.sp++ = x*y;
-    return vm;
+    F *sp = vm.stack, x = *--sp, y = *--sp;
+    *sp++ = x*y;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm add(struct vm vm) {
-    F x = *--vm.sp,
-      y = *--vm.sp;
-    *vm.sp++ = x+y;
-    return vm;
+    F *sp = vm.stack, x = *--sp, y = *--sp;
+    *sp++ = x+y;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm mad(struct vm vm) {
-    F x = *--vm.sp,
-      y = *--vm.sp,
-      z = *--vm.sp;
-    *vm.sp++ = x*y+z;
-    return vm;
+    F *sp = vm.stack, x = *--sp, y = *--sp, z = *--sp;
+    *sp++ = x*y+z;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm st1(struct vm vm, float dst[]) {
-    F x = *--vm.sp;
+    F *sp = vm.stack, x = *--sp;
     dst += vm.i;
     if (vm.n % K) {
         *dst = x[0];
     } else {
         *(F*)dst = x;
     }
-    return vm;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm st3(struct vm vm, float dst[]) {
-    F z = *--vm.sp,
-      y = *--vm.sp,
-      x = *--vm.sp;
+    F *sp = vm.stack, z = *--sp, y = *--sp, x = *--sp;
     dst += 3*vm.i;
 
 #if defined(HAVE_NEON_INTRINSICS)
@@ -78,31 +75,33 @@ struct vm st3(struct vm vm, float dst[]) {
         }
     }
 #endif
-    return vm;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm ld1(struct vm vm, float const src[]) {
+    F *sp = vm.stack;
     src += vm.i;
-    *vm.sp++ = (vm.n % K) ? (F){*src} : *(F const*)src;
-    return vm;
+    *sp++ = (vm.n % K) ? (F){*src} : *(F const*)src;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm val(struct vm vm, float imm) {
-    *vm.sp++ = splat(F, imm);
-    return vm;
+    F *sp = vm.stack;
+    *sp++ = splat(F, imm);
+    return (struct vm){sp, vm.i, vm.n};
 }
 
 struct vm idx(struct vm vm) {
     union { float f[8]; F v; } iota = {{0,1,2,3,4,5,6,7}};
     _Static_assert(len(iota.f) >= K, "");
 
-    *vm.sp++ = splat(F, (float)vm.i) + iota.v;
-    return vm;
+    F *sp = vm.stack;
+    *sp++ = splat(F, (float)vm.i) + iota.v;
+    return (struct vm){sp, vm.i, vm.n};
 }
 
-struct vm loop(struct vm vm, F *stack) {
-    vm.sp = stack;
+struct vm loop(struct vm vm, void *stack) {
     vm.i += (vm.n % K) ? 1 : K;
     vm.n -= (vm.n % K) ? 1 : K;
-    return vm;
+    return (struct vm){stack, vm.i, vm.n};
 }
