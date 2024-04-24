@@ -41,18 +41,18 @@ struct vm st1(struct vm vm, float dst[]) {
 }
 
 struct vm st3(struct vm vm, float dst[]) {
-    F *sp = vm.stack, z = *--sp, y = *--sp, x = *--sp;
+    F *sp = vm.stack, x = *--sp, y = *--sp, z = *--sp;
     dst += 3*vm.i;
 
 #if defined(HAVE_NEON_INTRINSICS)
     float32x4x3_t const lo = {{
-        __builtin_shufflevector(x,x,0,1,2,3),
-        __builtin_shufflevector(y,y,0,1,2,3),
         __builtin_shufflevector(z,z,0,1,2,3),
+        __builtin_shufflevector(y,y,0,1,2,3),
+        __builtin_shufflevector(x,x,0,1,2,3),
     }}, hi = {{
-        __builtin_shufflevector(x,x,4,5,6,7),
-        __builtin_shufflevector(y,y,4,5,6,7),
         __builtin_shufflevector(z,z,4,5,6,7),
+        __builtin_shufflevector(y,y,4,5,6,7),
+        __builtin_shufflevector(x,x,4,5,6,7),
     }};
 
     if (vm.n % K) {
@@ -63,15 +63,15 @@ struct vm st3(struct vm vm, float dst[]) {
     }
 #else
     if (vm.n % K) {
-        *dst++ = x[0];
-        *dst++ = y[0];
         *dst++ = z[0];
+        *dst++ = y[0];
+        *dst++ = x[0];
     } else {
         #pragma GCC unroll 32768
         for (int j = 0; j < K; j++) {
-            *dst++ = x[j];
-            *dst++ = y[j];
             *dst++ = z[j];
+            *dst++ = y[j];
+            *dst++ = x[j];
         }
     }
 #endif
