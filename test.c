@@ -68,7 +68,7 @@ static double test_naive(int const loops) {
     for (int i = 0; i < loops; i++) {
         for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
-            rgb[w*y + x].r = (float)x * (1/(float)w);
+            rgb[w*y + x].r = (float)x * (2/(float)w);
             rgb[w*y + x].g = 0.5f;
             rgb[w*y + x].b = (float)y * (1/(float)h);
         }
