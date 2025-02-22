@@ -44,7 +44,7 @@ static double test_demo(int const loops) {
             char stack[3*32];
             for (struct vm vm = {stack,0,w}; vm.n; vm = loop(vm,stack)) {
                 vm = idx(vm);
-                vm = val(vm, 1/(float)w);
+                vm = val(vm, 2/(float)w);
                 vm = mul(vm);
                 vm = val(vm, 0.5f);
                 vm = val(vm, (float)y * (1/(float)h));
