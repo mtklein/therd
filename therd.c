@@ -11,6 +11,10 @@ typedef vec(float) F;
 #define len(x) (int)(sizeof x / sizeof x[0])
 #define splat(T,v) (((T){0} + 1) * (v))
 
+static int lanes(struct vm vm) {
+    return vm.n % K ? 1 : K;
+}
+
 struct vm mul(struct vm vm) {
     F *sp = vm.stack, x = *--sp, y = *--sp;
     *sp++ = x*y;
@@ -32,7 +36,7 @@ struct vm mad(struct vm vm) {
 struct vm st1(struct vm vm, float dst[]) {
     F *sp = vm.stack, x = *--sp;
     dst += vm.i;
-    if (vm.n % K) {
+    if (lanes(vm) == 1) {
         *dst = x[0];
     } else {
         *(F*)dst = x;
@@ -55,24 +59,17 @@ struct vm st3(struct vm vm, float dst[]) {
         __builtin_shufflevector(x,x,4,5,6,7),
     }};
 
-    if (vm.n % K) {
+    if (lanes(vm) == 1) {
         vst3q_lane_f32(dst,lo,0);
     } else {
         vst3q_f32(dst+ 0, lo);
         vst3q_f32(dst+12, hi);
     }
 #else
-    if (vm.n % K) {
-        *dst++ = z[0];
-        *dst++ = y[0];
-        *dst++ = x[0];
-    } else {
-        #pragma GCC unroll 32768
-        for (int j = 0; j < K; j++) {
-            *dst++ = z[j];
-            *dst++ = y[j];
-            *dst++ = x[j];
-        }
+    for (int j = 0; j < lanes(vm); j++) {
+        *dst++ = z[j];
+        *dst++ = y[j];
+        *dst++ = x[j];
     }
 #endif
     return (struct vm){sp, vm.i, vm.n};
@@ -81,7 +78,7 @@ struct vm st3(struct vm vm, float dst[]) {
 struct vm ld1(struct vm vm, float const src[]) {
     F *sp = vm.stack;
     src += vm.i;
-    *sp++ = (vm.n % K) ? (F){*src} : *(F const*)src;
+    *sp++ = lanes(vm) == 1 ? (F){*src} : *(F const*)src;
     return (struct vm){sp, vm.i, vm.n};
 }
 
@@ -101,7 +98,7 @@ struct vm idx(struct vm vm) {
 }
 
 struct vm loop(struct vm vm, void *stack) {
-    vm.i += (vm.n % K) ? 1 : K;
-    vm.n -= (vm.n % K) ? 1 : K;
+    vm.i += lanes(vm);
+    vm.n -= lanes(vm);
     return (struct vm){stack, vm.i, vm.n};
 }
